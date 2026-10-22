@@ -23,7 +23,7 @@
       }
     ],
     "paths": {
-      "@/tide-integration/*": ["./src/lib/tide/*", "./src/lib/integration/*.pending.ts"],
+      "@/tide-integration/*": ["./src/lib/tide/*"],
       "@/*": [
         "./src/*"
       ]

@@ -84,8 +84,9 @@ test("released bank item opens beside ciphertext while care wishes remain refuse
   await expect(page.getByText("'heir-care-mai' role not found in doken.", { exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath("heir-proof-1440.png"), fullPage: true });
 });
-test("operator shows real UI paths for refused open, refused grant and app API refusal", async ({ page }, info) => {
-  await page.goto("/operator?as=ops");
+test("Long can inspect the server dump and test refused open, refused grant and app API refusal", async ({ page }, info) => {
+  await page.goto("/operator?as=long");
+  await expect(page.getByRole("heading", { name: "Server dump (what Heirloom stores)", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Try to open", exact: true }).first().click();
   await expect(page.getByText("0 of 14 nodes would release this key", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Try to release to Long", exact: true }).click();
@@ -99,7 +100,14 @@ test("operator shows real UI paths for refused open, refused grant and app API r
 });
 test("home exposes only role-appropriate links and page gates reject another identity", async ({ page }) => {
   await page.goto("/?as=long"); await expect(page.getByRole("link", { name: "From Mai, for you", exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Operator view", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Server dump", exact: true })).toBeVisible();
   await page.goto("/vault?as=long"); await expect(page.getByRole("heading", { name: "This page belongs to another role", exact: true })).toBeVisible();
   await page.goto("/?as=notary-duc"); await expect(page.getByText("Client role: realm-management / tide-realm-admin", { exact: true })).toBeVisible();
+});
+test("notary can try opening the dump without accidentally filing a real role grant", async ({ page }) => {
+  await page.goto("/operator?as=notary-duc");
+  await expect(page.getByRole("heading", { name: "Server dump (what Heirloom stores)", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try to release to Long", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Try to open", exact: true }).first().click();
+  await expect(page.getByText("0 of 14 nodes would release this key", { exact: true })).toBeVisible();
 });

@@ -13,7 +13,7 @@ export function AppShell({ children, title, eyebrow, description }: { children: 
   const links = [{ href: "/", label: "Home", show: true },
     { href: "/vault", label: "My vault", show: session.roles.includes("vault-owner-mai") },
     { href: "/heir", label: "For me", show: ["linh", "long"].includes(session.username) },
-    { href: "/operator", label: "Operator view", show: session.roles.includes("operator") },
+    { href: "/operator", label: "Server dump", show: session.authenticated },
     { href: "/seats", label: "Independent seats", show: session.isSeat },
     { href: "/setup", label: "Setup", show: session.isSeat }];
   async function signOut() { try { await session.logout(); } catch { setAuthError("Sign-out could not complete. Try signing out again."); } }
@@ -25,7 +25,7 @@ export function AppShell({ children, title, eyebrow, description }: { children: 
       <div className="header-account"><SyntheticBadge />{session.authenticated && <><span>{session.username}</span><button className="button-quiet" onClick={signOut}>Sign out</button></>}</div>
     </div></header>
     <main id="main" className="page-shell"><div className="page-heading"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1>{description && <p className="page-description">{description}</p>}</div>{authError && <p role="alert">{authError}</p>}{children}</main>
-    <footer className="app-footer"><span>Decided by Mai. Sealed with Tide.</span><span>Two independent seats to release. One named recipient per item.</span></footer>
+    <footer className="app-footer"><span>Decided by Mai. Sealed with Tide.</span><span>Demo: one notary seat. Production: two of three independent seats.</span></footer>
   </>;
 }
 

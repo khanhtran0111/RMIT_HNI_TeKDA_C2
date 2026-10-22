@@ -8,7 +8,7 @@ import { heirRoleForRecord } from "@/lib/fixtures";
 
 export default function HeirPage() {
   const session = useSession();
-  return <AppShell eyebrow="A decision kept for you" title="From Mai, for you" description="Each item has one named recipient. Two independent seats must approve a release before that recipient can open it."><AccessGate allow={["linh", "long"].includes(session.username)}><HeirContent key={`${session.username}:${session.token}`} username={session.username} roles={session.roles} /></AccessGate></AppShell>;
+  return <AppShell eyebrow="A decision kept for you" title="From Mai, for you" description="Each item has one named recipient. The notary approves releases in this demo; production requires two of three independent seats."><AccessGate allow={["linh", "long"].includes(session.username)}><HeirContent key={`${session.username}:${session.token}`} username={session.username} roles={session.roles} /></AccessGate></AppShell>;
 }
 function HeirContent({ username, roles }: { username: string; roles: string[] }) {
   const { items, loading, error, refresh, client } = useVaultItems();

@@ -39,13 +39,14 @@ test("unauthenticated and plain bearer requests are refused with the contracted 
     assert.equal((await response.json()).error.code, "UNAUTHENTICATED");
   }
 });
-test("authenticated recipient reads ciphertext, but cannot write items or read operator files", async () => {
+test("authenticated recipient reads ciphertext and server dump, but cannot write items", async () => {
   const read = await GET(await request("/api/items", "GET", ["_tide_decryptor"]));
   const write = await POST(await request("/api/items", "POST", ["_tide_decryptor"], "{}"));
   const operator = await operatorGet(await request("/api/operator/store", "GET", ["_tide_decryptor"]));
   assert.equal(read.status, 200);
   assert.equal(write.status, 403);
-  assert.equal(operator.status, 403);
+  assert.equal(operator.status, 200);
+  assert.deepEqual(Object.keys((await operator.json()).files), ["items.json", "policies.json"]);
 });
 test("owner validation returns 422 and leaves the store empty for invalid requests", async () => {
   for (const body of ["not json", "{}", JSON.stringify({ recordId: "unknown", title: "t", recipientUsername: "ops", ciphertext: "c" })]) {

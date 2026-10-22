@@ -49,5 +49,5 @@ function VaultContent({ username }: { username: string }) {
     <div className="field"><label htmlFor="recipient">Recipient</label><select id="recipient" value={recipient} onChange={event => setRecipient(event.target.value as Recipient)} disabled={busy}><option value="linh">Linh — care wishes</option><option value="long">Long — bank and pension logins</option></select><span className="help">Record: {recordForRecipient[recipient]}</span></div>
     <div className="field"><label htmlFor="content">Content</label><textarea id="content" required rows={7} value={content} onChange={event => setContent(event.target.value)} disabled={busy} placeholder="Use fictional information for this demo." /></div>
     <button disabled={busy || !title.trim() || !content.trim()} type="submit">{busy ? "Sealing in your browser…" : "Seal for " + recipient}</button>
-  </form>{status && <p role="status">{status}</p>}{sealError !== undefined && <RefusalPanel error={sealError} />}<p className="help">A release needs 2 of 3 independent seats. Heirloom has no seat.</p></section></div>;
+  </form>{status && <p role="status">{status}</p>}{sealError !== undefined && <RefusalPanel error={sealError} />}<p className="help">This demo uses one notary seat, threshold 1. Production requires 2 of 3 independent seats.</p></section></div>;
 }
