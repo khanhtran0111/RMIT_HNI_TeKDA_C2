@@ -12,7 +12,7 @@ Mai, 68, has early dementia. While lucid, she seals care wishes and bank logins,
 
 ### 2. Trust constraint insight
 
-Today one party decides: Apple, Google or a vault company reads or releases; password-manager emergency access hands one contact everything. Family is involved in 55% of elder financial abuse (MetLife, 2009), so one heir alone is unsafe. Only 10% of UK adults plan their digital assets. Without a single key-holder, people can seal what matters.
+Today one party decides: Apple, Google or a vault company reads or releases; password-manager emergency access hands one contact everything. Family, friends or caregivers are behind 55% of news-reported elder financial abuse (MetLife, 2009), so one heir alone is unsafe. Only 10% of UK adults plan their digital assets. Without a single key-holder, people can seal what matters.
 
 ### 3. Value & impact
 
