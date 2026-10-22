@@ -27,10 +27,13 @@ fi
 _APP_NAME="${_PKG_NAME:-myapp}"
 
 # --- Windows / Git Bash: Docker Desktop and winget jq are not on PATH in non-login shells ---
-for _d in "/c/Program Files/Docker/Docker/resources/bin" /c/Users/*/AppData/Local/Microsoft/WinGet/Packages/jqlang.jq_*; do
-  [ -d "$_d" ] && PATH="$_d:$PATH"
+# Appended (not prepended) and limited to the current user's profile, so nothing earlier on PATH is shadowed.
+for _d in "/c/Program Files/Docker/Docker/resources/bin" "$HOME"/AppData/Local/Microsoft/WinGet/Packages/jqlang.jq_*; do
+  [ -d "$_d" ] && PATH="$PATH:$_d"
 done
 export PATH
+# jq on Windows prints CRLF; a trailing \r inside an id breaks every URL built from it. -b = binary (LF) output.
+case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) jq() { command jq -b "$@"; } ;; esac
 
 # --- Configuration (override via environment) ---
 TIDECLOAK_URL="${TIDECLOAK_URL:-http://localhost:8080}"
@@ -200,6 +203,7 @@ for cmd in docker curl jq; do
   fi
 done
 
+if [ "${RESUME:-0}" != "1" ]; then
 # --- Step 1: Clean previous state ---
 echo "==> Cleaning previous state..."
 docker stop tidecloak 2>/dev/null || true
@@ -409,7 +413,7 @@ for entry in $CAST; do
   TOKEN="$(get_token)"
   curl -s -X POST "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users" \
     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-    -d "{\"username\":\"$U\",\"enabled\":true,\"attributes\":{\"tideInvitable\":[\"true\"]}}" > /dev/null
+    -d "{\"username\":\"$U\",\"email\":\"$U@heirloom-demo.invalid\",\"firstName\":\"$U\",\"lastName\":\"(synthetic)\",\"enabled\":true,\"emailVerified\":true,\"attributes\":{\"tideInvitable\":[\"true\"]}}" > /dev/null
 done
 sleep 2
 approve_and_commit users
@@ -445,13 +449,14 @@ INVITE_LINK=$(curl -s -X POST \
   -d '["link-tide-account-action"]')
 
 LINKS_FILE="$PROJECT_DIR/data/invite-links.txt"
+( umask 077; : > "$LINKS_FILE" )
 {
   echo "A-1  $REALM_ADMIN_USERNAME  $INVITE_LINK"
   for entry in $CAST; do
     U="${entry%%:*}"
     TOKEN="$(get_token)"
     UID_=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$U&exact=true" -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
-    L=$(curl -s -X POST "$TIDECLOAK_URL/admin/realms/$REALM_NAME/tideAdminResources/get-required-action-link?userId=$UID_&lifespan=43200" \
+    L=$(curl -s -X POST "$TIDECLOAK_URL/admin/realms/$REALM_NAME/tideAdminResources/get-required-action-link?userId=$UID_&lifespan=14400" \
       -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '["link-tide-account-action"]')
     echo "--   $U  $L"
   done
@@ -462,6 +467,15 @@ echo "INVITE LINKS (one per browser profile; also saved to data/invite-links.txt
 cat "$LINKS_FILE"
 echo "============================================"
 echo ""
+
+fi  # end of steps 1-8 (skipped with RESUME=1)
+if [ "${RESUME:-0}" = "1" ]; then
+  echo "==> RESUME=1: container, realm, users and invite links already exist; continuing at account linking."
+  TOKEN="$(get_token)"
+  USER_ID=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$REALM_ADMIN_USERNAME&exact=true" \
+    -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+  [ -z "$USER_ID" ] || [ "$USER_ID" = "null" ] && { echo "ERROR: $REALM_ADMIN_USERNAME not found; run without RESUME." >&2; exit 1; }
+fi
 
 # --- Step 9: Wait for account linking ---
 cat <<BANNER
@@ -503,7 +517,7 @@ while [ "${SKIP_CAST_WAIT:-0}" != "1" ]; do
     K=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$U&exact=true" -H "Authorization: Bearer $TOKEN" | jq -r '.[0].attributes.tideUserKey[0] // empty')
     [ -z "$K" ] && MISSING="$MISSING $U"
   done
-  [ -z "$MISSING" ] && echo "  All cast accounts linked." && break
+  [ -z "$MISSING" ] && echo "  All cast accounts linked." && rm -f "$LINKS_FILE" && break
   echo "  still waiting for:$MISSING"
   [ -f "$PROJECT_DIR/data/SKIP_CAST_WAIT" ] && echo "  (skip file found, continuing)" && break
   sleep 15
