@@ -65,6 +65,12 @@ Prerequisites: Docker Desktop (running), Node 20+, Git Bash on Windows (the scri
 
 [`heirloom-demo.mp4`](heirloom-demo.mp4) (1:56, in this repository). Every app shot is the running prototype against a local TideCloak and the live Tide network: the refusals, the 403, the enclave approval and the release are real responses, not mock-ups. All people and data are synthetic.
 
+## Live walkthrough
+
+[heirloom-unlocked.vercel.app](https://heirloom-unlocked.vercel.app) lets anyone click through the story without an account. It runs the real Heirloom pages in your browser with **simulated** Tide and API responses, and every page says so. The steps in the top bar: 1. Mai seals her items, 2. Long searches the server dump, 3. Long tries to open, 4. Notary Duc releases (a browser dialog stands in for the Tide enclave), 5. Long after the release. **Start over** resets it.
+
+The real prototype needs the local TideCloak (see Setup). The run against TideCloak and the live Tide network is in the demo video. Source: `app/walkthrough/`; build with `node walkthrough/build.mjs` from `app/`, then deploy `app/walkthrough/dist` as static files.
+
 ## How it works
 
 - **Records.** Each item is one record (`mai-care`, `mai-bank`). Mai's browser encrypts it with the record id as its only tag; the server stores the content only as ciphertext in `data/heirloom/items.json` (the title and recipient stay readable so the right person can find it).

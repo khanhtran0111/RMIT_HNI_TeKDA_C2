@@ -30,3 +30,7 @@ app/next-env.d.ts
 *.trace.db
 .DS_Store
 Thumbs.db
+
+# Public walkthrough build output and Vercel link (rebuilt by app/walkthrough/build.mjs)
+app/walkthrough/dist/
+.vercel/
