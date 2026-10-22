@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { verifyTideJWT, hasRole, extractToken } from "./tideJWT";
+import { verifyTideJWT, hasRole, hasClientRole, extractToken } from "./tideJWT";
 import { verifyDpop, MemoryJtiStore, type JtiStore } from "./verifyDpop";
 
 // A proof is accepted while |now - iat| <= IAT_SKEW, so a jti must be remembered until at least
@@ -43,6 +43,17 @@ export function withAuth(handler: AuthHandler) {
 export function withRole(role: string, handler: AuthHandler) {
   return withAuth(async (req, jwt) => {
     if (!hasRole(jwt, role)) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return handler(req, jwt);
+  });
+}
+
+// Same as withRole, for a role of one named client, e.g.
+// withClientRole("realm-management", "tide-realm-admin", handler).
+export function withClientRole(clientId: string, role: string, handler: AuthHandler) {
+  return withAuth(async (req, jwt) => {
+    if (!hasClientRole(jwt, clientId, role)) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
     return handler(req, jwt);
