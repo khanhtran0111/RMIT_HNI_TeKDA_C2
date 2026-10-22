@@ -169,7 +169,7 @@ Then the release: in the `notary-duc` profile, open **Independent seats** (`/sea
 1. **Possibility.** Mai, 68, seals care wishes for her daughter Linh and bank logins for her son Long, encrypted in her browser.
 2. **Constraint.** Today one party decides: a company, a timer, or one relative.
 3. **The prototype and TideCloak's role.** The server dump holds every stored byte, yet the Tide network refuses to open the bank logins ("0 of 14 nodes would release this key"). Long's own release attempt gets "403 from TideCloak: not a seat". Notary Duc files the release, and it commits only after he approves it in the Tide enclave, outside our app.
-4. **What changes.** After the release, Long opens the bank logins in his browser, while Linh's care wishes stay refused. Then the bigger picture: the same engine for care wishes, power of attorney, founder continuity and self-custody wallets, and a roadmap from this prototype to a Release Rules API.
+4. **What changes.** After the release, Long opens the bank logins in his browser, while Linh's care wishes stay refused. Then the bigger picture, filmed on the app's **/vision** and **/help** pages: the same engine for care wishes, power of attorney, founder continuity and self-custody wallets, and a roadmap from this prototype to a Release Rules API.
 
 ## Live walkthrough
 
