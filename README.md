@@ -1,75 +1,99 @@
+[![Built with TideCloak](https://tide.org/badges/built-with-tidecloak.svg)](https://tide.org/tidecloak?utm_source=github&utm_medium=readme&utm_campaign=unlocked)
+
 ## Project overview
 
-Heirloom lets a person seal what their family will need if they lose capacity or die, with one named recipient per item and only ciphertext stored by the company.
+_Heirloom lets a person seal what their family will need if they lose capacity or die: no company, relative or seat can open or release it alone, and each item reaches only its named recipient._
 
-**Vision & originality.** Mai, 68, seals care wishes and bank/pension logins while she can still decide. Long receives only his bank record; the care record remains sealed to other recipients.
+Built with [TideCloak](https://tide.org/tidecloak?utm_source=github&utm_medium=readme&utm_campaign=unlocked).
 
-**Trust-constraint insight.** Holding every stored byte and signed policy must not confer decryption authority. The intended production design requires two of three independent seats to release an item; neither the company nor a recipient is a seat.
+### 1. Vision & originality
 
-**Value & impact.** Families receive the information intended for them without giving the operator the plaintext. All identities, wishes and account details are synthetic.
+Mai, 68, has early dementia. While lucid, she seals care wishes and bank logins, each for one relative. Release needs people she chose (doctor, notary, friend), not a company, a timer or one child.
 
-**Why TideCloak matters.** The built-in `RelationshipAttestation:1` contract checks the record tag, signed policy and caller’s role at the Tide network. Release grants the record-specific heir role through TideCloak.
+### 2. Trust constraint insight
 
-**Prototype & storytelling.** The free licence permits three linked accounts: Mai, Long and notary Duc. This demo therefore has one seat, threshold 1; it does not demonstrate a two-seat quorum. Long inspects the server dump but cannot open before release or grant himself access. The notary can release but cannot read. After approval and a new sign-in, Long opens bank logins while care wishes remain refused. Compare his plaintext with stored ciphertext on `/heir`.
+Today one party decides: Apple, Google or a vault company reads or releases; password-manager emergency access hands one contact everything. Family is involved in 55% of elder financial abuse (MetLife, 2009), so one heir alone is unsafe. Only 10% of UK adults plan their digital assets. Without a single key-holder, people can seal what matters.
 
-**Honest limits:** capacity or death is a human judgement backed by a mocked document; Heirloom cannot make a bank or Apple open an account, it passes on what Mai stored; nothing un-reads what an heir has read; 2 of 3 seats colluding can release early, which is why no seat is the company or a recipient.
+### 3. Value & impact
 
-## Local setup
+Older adults facing incapacity, and families. Once Mai cannot manage money, Long gets the pension logins for care bills; her care wishes stay closed to him and to Heirloom.
 
-Use Node.js 22+ and Chrome or Edge. Allow pop-ups for `http://localhost:3000` and `http://localhost:8080`. Use separate browser profiles for `notary-duc`, `mai` and `long`. Do not use the VS Code browser for Tide sign-in. Browser tests use installed Chrome.
+### 4. Why TideCloak matters
 
-```sh
-git clone https://github.com/khanhtran0111/RMIT_HNI_TeKDA_C2
-cd RMIT_HNI_TeKDA_C2/app
-npm ci
-npm run dev
+- The company cannot read or release.
+- One relative cannot open or release.
+- A seat can release but cannot read.
+- Each item opens only for its named recipient.
+
+Our server enforces none of this. Tide network nodes check each item's signed policy and the caller's role before decrypting; TideCloak commits a release (a role grant) only after quorum approval by the seats.
+
+### 5. Prototype & storytelling
+
+Watch the server dump: the operator holds every byte and policy, yet every node refuses. The notary then releases the bank logins; Long opens them but is refused on his sister's care wishes. The free licence's user limit gives the prototype one seat; production uses 2 of 3 independent seats.
+
+## Setup
+
+Prerequisites: Docker Desktop (running), Node 20+, Git Bash on Windows (the scripts are Bash and need `curl` and `jq`), and Chrome or Edge with pop-ups allowed for `localhost:3000` and `localhost:8080`. Never use the VS Code browser for Tide sign-in. Use one browser profile per account: `notary-duc`, `mai`, `long`.
+
+1. Copy `app/.env.example` to `app/.env` and set `KC_BOOTSTRAP_ADMIN_PASSWORD` (the local TideCloak master password), `TIDE_LICENSE_EMAIL` (an address you control) and `TIDE_TERMS_ACCEPTED=yes` (only after you have read and agreed to https://tide.org/legal).
+2. Install and bootstrap TideCloak (starts the `tideorg/tidecloak-dev` container, creates the realm, exports `app/data/tidecloak.json`):
+
+   ```sh
+   cd app
+   npm install
+   REALM_NAME=heirloom CLIENT_NAME=heirloom-client \
+     CAST="mai:vault-owner-mai,_tide_encryptor,_tide_decryptor long:_tide_decryptor" \
+     npm run init
+   ```
+
+   `CAST` limits the users to the three-account cast (`notary-duc` is always created as the first admin). Without it the script creates the original seven-person cast, which the free licence will not let you link.
+3. Open each printed invite link in its own browser profile and link a Tide account (first link = `notary-duc`). The script continues when all are linked.
+4. Start the app:
+
+   ```sh
+   npm run dev
+   ```
+
+5. At `http://localhost:3000`, sign in as `notary-duc` and sign the four policies on `/setup` (one enclave pop-up each).
+6. Write the ids used by the operator's release attempt:
+
+   ```sh
+   npm run demo-ids
+   ```
+
+## How it works
+
+- **Records.** Each item is one record (`mai-care`, `mai-bank`). Mai's browser encrypts it with the record id as its only tag; the server stores only ciphertext in `data/heirloom/items.json`.
+- **Policies.** Four policies use Tide's built-in `RelationshipAttestation:1` contract (nothing custom is deployed): `owner:mai-care` and `owner:mai-bank` give role `vault-owner-mai` read-write; `heir:mai-care` gives role `heir-care-mai` read; `heir:mai-bank` gives role `heir-bank-mai` read. A seat signs them once on `/setup`.
+- **Release = one governed role grant.** A seat asks TideCloak to grant `heir-bank-mai` to Long. TideCloak turns that into a `GRANT_ROLES` change request that commits only after seat approval in the Tide enclave (a signing window outside our app). Revocation is the same request with a delete.
+
+```
+Mai's browser   --encrypt(item, tag=mai-bank)-->  ciphertext  --> Heirloom server (stores bytes only)
+Anyone          --decrypt(ciphertext, policy)-->  Tide nodes check policy + tag + caller's role
+                                                  no role -> "Refused by the Tide network, 0 of N nodes"
+Seat's browser  --grant heir-bank-mai to Long-->  TideCloak change request --> enclave approval --> commit
+Long (re-login) --decrypt mai-bank-->             role present -> plaintext
+Long            --decrypt mai-care-->             no heir-care-mai role -> refused
 ```
 
-The real Tide helper, refusal classifier, `/setup`, `/seats`, policies API and `/check` diagnostics are included. Without Dev A’s private `app/data/tidecloak.json`, the Dev B pages display “Waiting for vault setup”; sign-in and cryptographic operations require that adapter.
+## Honest limits
 
-### Connect to Dev A’s realm
+- Capacity or death is a human judgement backed by a mocked document; the capacity assessment in the demo is synthetic.
+- Heirloom cannot make a bank or Apple open an account; it passes on what Mai stored.
+- Nothing un-reads what an heir has read.
+- 2 of 3 seats colluding can release early, which is why no seat is the company or a recipient.
+- The prototype has one seat (the notary), so the release threshold is 1. The free Tide licence refused more than three linked accounts. Production uses 2 of 3 independent seats; this demo does not show that quorum.
 
-1. Put the adapter supplied privately at `app/data/tidecloak.json`. It must contain `jwk`, `vendorId`, `homeOrkUrl`, realm `heirloom` and client `heirloom-client`. For LAN testing, Dev A supplies the correct `auth-server-url` and allowed origin.
-2. As `notary-duc`, sign the four policies on `/setup`. Use `/check` for record round-trips and refusal diagnostics. The measured refusal/outage markers in `src/lib/tide/refusal.ts` still require Dev A’s verification.
-3. On the realm owner’s machine, run `npm run demo-ids` to generate private `data/heirloom/demo-ids.json`. It contains Long’s user ID and the `heir-bank-mai` role ID for the refused release probe.
-4. As `mai`, select **Seal demo items** on `/vault`. As `long`, open `/operator`: **Server dump (what Heirloom stores)**. All signed-in users can inspect this ciphertext-only dump.
-5. Run the rehearsal below with the real realm. Local UI test doubles do not establish Tide network behavior.
+## Demo walkthrough
 
-### Bootstrap the recording machine
+1. **Possibility** (`/vault`, as `mai`): click **Seal demo items**. Two items appear SEALED with a ciphertext preview: "Care wishes" for Linh and "Bank and pension logins" for Long. Open either one: Mai can re-read her own items.
+2. **Constraint**: today one party decides, the company, a timer or one relative.
+3. **The server dump** (`/operator`, as `long`): "Server dump (what Heirloom stores)" shows the raw items, the policies and their decoded rules. **Try to open** "Bank and pension logins": **Refused by the Tide network, 0 of N nodes would release this key**, with the raw cause. **Try to release to Long**: **403 from TideCloak: not a seat**. **Call our API without DPoP**: **401: the app's own API refused (not Tide)**.
+4. **Son refused before release** (`/heir`, as `long`): **Open** the bank logins: refused, cause `'heir-bank-mai' role not found in doken.`
+5. **A seat cannot read** (`/operator`, as `notary-duc`): **Try to open** either item: refused.
+6. **Release** (`/seats`, as `notary-duc`): **Release bank logins to Long**, then approve the change request in the Tide enclave pop-up (the page attaches the comment "Capacity assessment CA-DEMO-07 attached (synthetic)"): **APPROVED, committed**.
+7. **One item, one recipient** (`/heir`, as `long`): sign out and back in (roles arrive on the next sign-in). Open the bank logins: plaintext. Open the care wishes (listed under "Addressed to another recipient"): refused (`'heir-care-mai' role not found in doken.`). **Compare with stored ciphertext** shows his plaintext next to the bytes the server holds.
 
-Dev A owns realm setup. Do not run init against an existing realm as a reset. Requires Docker Desktop, Bash, `curl` and `jq`; on Windows use Git Bash or WSL with Docker integration.
+## Synthetic data
 
-```sh
-docker info
-cd app
-cp .env.example .env
-# The deployment owner fills in their password, licence email,
-# and TIDE_TERMS_ACCEPTED=yes only after accepting https://tide.org/legal.
-REALM_NAME=heirloom CLIENT_NAME=heirloom-client npm run init
-npm run dev
-```
-
-The init command starts TideCloak and exports the private adapter. Read the **SPEC changed 13:25** amendment in [SPEC](docs/SPEC.md) before applying its original seven-person instructions. The current realm has only `notary-duc` (seat), `mai` (owner), and `long` (heir). There are no `ops`, `linh`, `dr-hanh` or `thu` accounts. The care record’s Linh metadata is a fictional intended recipient, not a linked account; its heir role is not granted. Login branding and onboarding remain “none”.
-
-## Rehearse the three-account demo
-
-1. `mai` seals both fixtures on `/vault` and re-opens them. `long` inspects `/operator`: opening bank logins must show **Refused by the Tide network**, **0 of N nodes would release this key**, and the raw cause. **Try to release to Long** must show **403 from TideCloak: not a seat**. **Call our API without DPoP** must show **401: the app's own API refused (not Tide)**.
-2. `notary-duc` opens `/operator` and tries to open either record: refused. Its release-refusal button is disabled because a seat can actually authorize a grant. Use `/seats` and the [TideCloak console](http://localhost:8080/admin/heirloom/console/) for the release procedure.
-3. The notary files and approves the `heir-bank-mai` grant to Long with the mocked assessment as a comment. With one admin the threshold is **1**. Skip the original **Pending 1 of 2** beat; two-of-three quorum is an intended production property, unproven by this demo.
-4. After commit, Long signs out/in, opens the bank record on `/heir`, and remains refused on care wishes under “Addressed to another recipient”. Use **Compare with stored ciphertext** for the final split-screen. Dev A records the separate bootstrap-admin test outcome and any dev-container exception.
-
-API item metadata and signed policies are visible to authenticated users. Ciphertext and policy possession do not authorize decryption. Policies disclose their role/record metadata, an intentional prototype trade-off. Server validation keeps `mai-care` addressed to Linh and `mai-bank` addressed to Long to match the fixed signed policies.
-
-## Verification
-
-```sh
-cd app
-npm test
-npm run typecheck
-npm run build
-npm run test:ui
-```
-
-Unit/API tests use temporary directories, generated JWT/DPoP keys and synthetic inputs. Browser tests isolate their synthetic identity and crypto doubles from the production build and label the harness explicitly. Real Tide sign-in, decrypt/refusal behavior, measured markers and the bootstrap-admin result still require Dev A’s adapter and realm.
-
-`app/data/`, `.env`, screenshots and local realm state stay out of Git. JSON storage and in-memory DPoP replay protection target one local app process. The intended production two-of-three release requires restoring three independent seat accounts when the licence allows them.
+All people, accounts and documents are fictional: Mai, Long, Linh and Notary Duc, the care wishes, the bank and pension logins (`VietBank demo account 0000-1111-2222`, `PEN-DEMO-42`) and the capacity assessment. No real bank, health or government system is connected.
