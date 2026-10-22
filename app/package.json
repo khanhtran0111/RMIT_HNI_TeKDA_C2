@@ -6,7 +6,9 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "init": "bash scripts/init-tidecloak.sh"
+    "init": "bash scripts/init-tidecloak.sh",
+    "reset-demo": "bash scripts/reset-demo.sh",
+    "demo-ids": "bash scripts/demo-ids.sh"
   },
   "dependencies": {
     "@tidecloak/nextjs": "0.14.40",
