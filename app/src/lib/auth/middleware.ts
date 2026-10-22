@@ -14,7 +14,9 @@ export function withAuth(handler: AuthHandler) {
       // and without checking the DPoP proof a stolen token replays as a plain `Bearer` and passes
       // (AP-43). verifyDpop rejects an unbound token, a Bearer-scheme replay, a proof signed by a
       // different key, and a proof for another URL or method. It throws; the catch below answers 401.
-      await verifyDpop(req, token, jwt as { cnf?: { jkt?: string } });
+      // No reverse proxy in front of this app, so x-forwarded-* headers are client-controlled:
+      // never let them choose the htu the proof is checked against.
+      await verifyDpop(req, token, jwt as { cnf?: { jkt?: string } }, { trustForwardedHeaders: false });
       return handler(req, jwt);
     } catch (err) {
       return Response.json(
