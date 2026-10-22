@@ -23,6 +23,7 @@
       }
     ],
     "paths": {
+      "@/tide-integration/*": ["./src/lib/tide/*"],
       "@/*": [
         "./src/*"
       ]

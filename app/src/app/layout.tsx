@@ -1,9 +1,14 @@
 import "./globals.css";
 import { Providers } from "./providers";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { loadTideConfig } from "@/lib/auth/tidecloakConfig";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Tide E2EE Vault",
-  description: "End-to-end encrypted vault powered by Tide",
+  title: "Heirloom | A decision that stays yours",
+  description: "Seal what your family will need. Each item reaches only its named recipient, through a release approved by two independent seats.",
 };
 
 export default function RootLayout({
@@ -11,10 +16,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const config = process.env.CLIENT_ADAPTER || existsSync(join(process.cwd(), "data", "tidecloak.json")) ? loadTideConfig() : null;
   return (
     <html lang="en">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, padding: "2rem", background: "#0a0a0a", color: "#ededed" }}>
-        <Providers>{children}</Providers>
+      <body>
+        <Providers config={config ? { ...config } : null}>{children}</Providers>
       </body>
     </html>
   );

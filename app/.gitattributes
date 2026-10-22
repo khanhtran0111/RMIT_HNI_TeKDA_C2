@@ -1,0 +1,2 @@
+# Tide pins this relay's script bytes. Windows checkout must preserve LF.
+public/tide_dpop_auth.html text eol=lf
