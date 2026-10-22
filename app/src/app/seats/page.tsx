@@ -197,7 +197,7 @@ export default function SeatsPage() {
   }, []);
 
   const refreshPending = useCallback(async (): Promise<ChangeRequest[]> => {
-    setPending({ kind: "loading" });
+    setPending((p) => (p.kind === "loaded" ? p : { kind: "loading" }));
     try {
       const r = await client().list("PENDING");
       if (!r.ok || !Array.isArray(r.data)) {
@@ -214,7 +214,7 @@ export default function SeatsPage() {
   }, [client]);
 
   const refreshDecided = useCallback(async () => {
-    setDecided({ kind: "loading" });
+    setDecided((d) => (d.kind === "loaded" ? d : { kind: "loading" }));
     try {
       const c = client();
       const [a, d] = [await c.list("APPROVED"), await c.list("DENIED")];
