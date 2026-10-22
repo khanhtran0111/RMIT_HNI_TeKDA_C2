@@ -6,23 +6,30 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
+    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts tests/*.test.tsx",
+    "typecheck": "tsc --noEmit",
+    "test:ui": "playwright test",
     "init": "bash scripts/init-tidecloak.sh",
     "reset-demo": "bash scripts/reset-demo.sh",
     "demo-ids": "bash scripts/demo-ids.sh"
   },
   "dependencies": {
+    "@tidecloak/js": "0.14.41",
     "@tidecloak/nextjs": "0.14.40",
+    "@tideorg/js": "0.14.29",
+    "heimdall-tide": "0.14.41",
     "jose": "^6.0.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@tidecloak/js": "0.14.41",
-    "heimdall-tide": "0.14.41",
-    "@tideorg/js": "0.14.29"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.0.0"
   }
 }

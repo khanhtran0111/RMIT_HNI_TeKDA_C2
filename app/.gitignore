@@ -12,3 +12,8 @@ scripts/.skycloak-api-key
 # Local TideCloak state (adapter export + H2 volume)
 data/tidecloak.json
 data/keycloakdb*
+
+# Local verification artifacts and Next.js-generated instructions.
+test-results/
+playwright-report/
+AGENTS.md
