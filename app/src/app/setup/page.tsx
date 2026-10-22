@@ -34,6 +34,8 @@ type ButtonState =
   | { state: "error"; err: TideErrorClass };
 
 const fromBase64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+// The SDK's secureFetch runs `new URL(url)`, so a relative path throws "Invalid URL".
+const abs = (path: string) => new URL(path, window.location.origin).toString();
 
 async function errorText(res: Response): Promise<string> {
   const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
@@ -76,13 +78,13 @@ export default function SetupPage() {
   const getAdminPolicy = useCallback(async (): Promise<Uint8Array> => {
     if (adminPolicyRef.current) return adminPolicyRef.current;
     let b64: unknown;
-    const res = await secureFetch("/api/admin-policy");
+    const res = await secureFetch(abs("/api/admin-policy"));
     if (res.ok) {
       b64 = ((await res.json()) as { adminPolicy?: unknown }).adminPolicy;
       setAdminPolicySource("via /api/admin-policy (server)");
     } else if (res.status === 501) {
       const realm = String(getConfig().realm ?? "");
-      const url = `${baseURL}/admin/realms/${encodeURIComponent(realm)}/iga/role-policies/name/tide-realm-admin`;
+      const url = `${String(baseURL).replace(/\/+$/, "")}/admin/realms/${encodeURIComponent(realm)}/iga/role-policies/name/tide-realm-admin`;
       const direct = await secureFetch(url);
       if (!direct.ok) throw new Error(`TideCloak answered ${direct.status} for the admin policy`);
       b64 = ((await direct.json()) as { policy?: unknown }).policy;
@@ -98,7 +100,7 @@ export default function SetupPage() {
   const loadStored = useCallback(async () => {
     const next: Stored = {};
     for (const r of RECORDS) {
-      const res = await secureFetch(`/api/policies?record=${r}`);
+      const res = await secureFetch(abs(`/api/policies?record=${r}`));
       next[r] = res.ok ? ((await res.json()) as { owner: string | null; heir: string | null }) : { error: await errorText(res) };
     }
     setStored(next);
@@ -125,7 +127,7 @@ export default function SetupPage() {
         throw new Error(`signed policy does not match ${p.id}: ${JSON.stringify(d)}`);
       }
       const body: { policyId: string } & PolicyEntry = { policyId: p.id, recordId: p.recordId, subject, access: p.access, policy: signed };
-      const res = await secureFetch("/api/policies", {
+      const res = await secureFetch(abs("/api/policies"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
