@@ -46,6 +46,7 @@ test("owner seals both fixtures without posting plaintext and opens/hides one", 
   await expect(page.getByRole("button", { name: "Demo items sealed", exact: true })).toBeDisabled();
   await page.getByRole("article").first().getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Opened in your browser", exact: false })).toBeVisible();
+  await expect(page.getByRole("article").first().locator(".status-chip")).toContainText("SEALED");
   await page.getByRole("button", { name: "Hide plaintext", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Opened in your browser", exact: false })).toHaveCount(0);
   await page.screenshot({ path: info.outputPath("vault-1440.png"), fullPage: true });

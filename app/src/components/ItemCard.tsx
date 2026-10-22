@@ -10,6 +10,7 @@ export function ItemCard({ item, access, released = false, open, operator = fals
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
   const [compare, setCompare] = useState(false);
+  const state = busy ? "pending" : access === "heir" && (plaintext !== null || released) ? "released" : "sealed";
   async function handleOpen() {
     setBusy(true); setError(undefined); setPlaintext(null);
     try { setPlaintext(await open()); }
@@ -17,7 +18,7 @@ export function ItemCard({ item, access, released = false, open, operator = fals
     finally { setBusy(false); }
   }
   return <article className="item">
-    <div className="item-heading"><h3>{item.title}</h3><StatusChip state={busy ? "pending" : plaintext !== null ? "released" : released ? "released" : "sealed"} label={busy ? "OPENING" : released && plaintext === null ? "RELEASED TO ME" : undefined} /></div>
+    <div className="item-heading"><h3>{item.title}</h3><StatusChip state={state} label={busy ? "OPENING" : released && plaintext === null ? "RELEASED TO ME" : undefined} /></div>
     <div className="item-meta"><span>From <strong>{item.ownerUsername}</strong></span><span>For <strong>{item.recipientUsername}</strong></span><code>{item.recordId}</code><time dateTime={item.createdAt}>{new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(item.createdAt))}</time></div>
     {otherRecipient && <p className="help">Addressed to {item.recipientUsername}. Opening sends the same request to the Tide network so it can enforce the item’s policy.</p>}
     <div className="cipher-preview"><span className="help">Ciphertext stored by Heirloom</span><code>{item.ciphertext.slice(0, 100)}{item.ciphertext.length > 100 ? "…" : ""}</code></div>
