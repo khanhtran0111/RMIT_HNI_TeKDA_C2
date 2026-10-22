@@ -13,6 +13,10 @@
       { "name": "_tide_decryptor", "description": "RelationshipAttestation:1: may decrypt records a policy grants to this user (name fixed by the ORK contract). Capability only; the policy subject decides which records." },
       { "name": "_tide_vault.selfencrypt", "description": "Encrypt data with tag: vault" },
       { "name": "_tide_vault.selfdecrypt", "description": "Decrypt data with tag: vault" },
+      { "name": "vault-owner-mai", "description": "Heirloom: subject of the owner policies for Mai's records (mai-care, mai-bank)" },
+      { "name": "heir-care-mai", "description": "Heirloom: subject of the heir policy for mai-care. Granting it IS the release (2 of 3 seats)" },
+      { "name": "heir-bank-mai", "description": "Heirloom: subject of the heir policy for mai-bank. Granting it IS the release (2 of 3 seats)" },
+      { "name": "operator", "description": "Heirloom Pty Ltd operations: sees everything the server stores, holds no Tide decrypt role" },
       {
         "name": "default-roles-REALM_NAME",
         "description": "${role_default-roles}",

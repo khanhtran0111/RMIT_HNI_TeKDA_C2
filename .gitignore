@@ -1,6 +1,7 @@
 # Whitelist: only the product and the shared dev spec go to GitHub. Everything else stays local.
 /*
 !/.gitignore
+!/.gitattributes
 !/README.md
 !/*.mp4
 !/app/

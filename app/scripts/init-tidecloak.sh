@@ -26,6 +26,12 @@ if [ -f "$PROJECT_DIR/package.json" ] && command -v jq &>/dev/null; then
 fi
 _APP_NAME="${_PKG_NAME:-myapp}"
 
+# --- Windows / Git Bash: Docker Desktop and winget jq are not on PATH in non-login shells ---
+for _d in "/c/Program Files/Docker/Docker/resources/bin" /c/Users/*/AppData/Local/Microsoft/WinGet/Packages/jqlang.jq_*; do
+  [ -d "$_d" ] && PATH="$_d:$PATH"
+done
+export PATH
+
 # --- Configuration (override via environment) ---
 TIDECLOAK_URL="${TIDECLOAK_URL:-http://localhost:8080}"
 REALM_NAME="${REALM_NAME:-$_APP_NAME}"
@@ -42,6 +48,11 @@ if [ -f "$PROJECT_DIR/.env" ]; then
 fi
 
 KC_BOOTSTRAP_ADMIN_USERNAME="${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
+# Heirloom: the realm's first admin (seat 1). NOT the master bootstrap admin above.
+REALM_ADMIN_USERNAME="${REALM_ADMIN_USERNAME:-notary-duc}"
+# Heirloom cast (docs/SPEC.md section 2): username:comma-separated setup realm roles ("-" = none).
+# Created and granted BEFORE the tide-realm-admin flip, so every write is approved by this script.
+CAST="${CAST:-dr-hanh:- thu:- mai:vault-owner-mai,_tide_encryptor,_tide_decryptor linh:_tide_decryptor long:_tide_decryptor ops:operator}"
 
 # No default. A default password IS a hardcoded credential, just with extra steps —
 # and one that silently ships to whoever runs this next (AP-41).
@@ -194,10 +205,9 @@ echo "==> Cleaning previous state..."
 docker stop tidecloak 2>/dev/null || true
 docker rm tidecloak 2>/dev/null || true
 mkdir -p "$PROJECT_DIR/data"
-sudo rm -f "$PROJECT_DIR/data/keycloakdb"* 2>/dev/null || true
-sudo chown -R 1000:1000 "$PROJECT_DIR/data"
+rm -f "$PROJECT_DIR/data/keycloakdb"* "$PROJECT_DIR/data/tidecloak.json" 2>/dev/null || true
 
-if lsof -i :8080 >/dev/null 2>&1; then
+if curl -s -o /dev/null --max-time 2 "http://localhost:8080"; then
   echo "ERROR: Port 8080 is already in use."
   exit 1
 fi
@@ -216,8 +226,10 @@ case "$TIDECLOAK_IMAGE" in
          exit 1 ;;
 esac
 
-sudo docker run -d --name tidecloak \
-  -v "$PROJECT_DIR/data:/opt/keycloak/data/h2" \
+H2_DIR="$PROJECT_DIR/data"
+command -v cygpath >/dev/null 2>&1 && H2_DIR="$(cygpath -w "$PROJECT_DIR/data")"
+MSYS_NO_PATHCONV=1 docker run -d --name tidecloak \
+  -v "$H2_DIR:/opt/keycloak/data/h2" \
   -p 8080:8080 \
   -e KC_BOOTSTRAP_ADMIN_USERNAME="$KC_BOOTSTRAP_ADMIN_USERNAME" \
   -e KC_BOOTSTRAP_ADMIN_PASSWORD="$KC_BOOTSTRAP_ADMIN_PASSWORD" \
@@ -374,7 +386,7 @@ TOKEN="$(get_token)"
 curl -s -X POST "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"admin\",\"email\":\"$ADMIN_EMAIL\",\"firstName\":\"Admin\",\"lastName\":\"User\",\"enabled\":true,\"emailVerified\":false,\"attributes\":{\"tideInvitable\":[\"true\"]}}"
+  -d "{\"username\":\"$REALM_ADMIN_USERNAME\",\"email\":\"$ADMIN_EMAIL\",\"firstName\":\"Notary\",\"lastName\":\"Duc\",\"enabled\":true,\"emailVerified\":false,\"attributes\":{\"tideInvitable\":[\"true\"]}}"
 
 # Approve user creation change request before proceeding
 echo "==> Approving user change requests..."
@@ -382,13 +394,42 @@ sleep 2
 approve_and_commit users
 
 TOKEN="$(get_token)"
-USER_ID=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=admin" \
+USER_ID=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$REALM_ADMIN_USERNAME&exact=true" \
   -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
 
 if [ -z "$USER_ID" ] || [ "$USER_ID" = "null" ]; then
   echo "ERROR: Could not find admin user after creation."
   exit 1
 fi
+
+# --- Step 7b (Heirloom): create the rest of the cast and grant setup roles, still firstAdmin ---
+echo "==> Creating Heirloom cast users and setup roles..."
+for entry in $CAST; do
+  U="${entry%%:*}"
+  TOKEN="$(get_token)"
+  curl -s -X POST "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users" \
+    -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+    -d "{\"username\":\"$U\",\"enabled\":true,\"attributes\":{\"tideInvitable\":[\"true\"]}}" > /dev/null
+done
+sleep 2
+approve_and_commit users
+for entry in $CAST; do
+  U="${entry%%:*}"; ROLES="${entry#*:}"
+  [ "$ROLES" = "-" ] && continue
+  TOKEN="$(get_token)"
+  UID_=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$U&exact=true" -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+  REPS="["
+  for R in ${ROLES//,/ }; do
+    REP=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/roles/$R" -H "Authorization: Bearer $TOKEN" | jq -c '{id,name}')
+    REPS="$REPS$REP,"
+  done
+  REPS="${REPS%,}]"
+  curl -s -X POST "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users/$UID_/role-mappings/realm" \
+    -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$REPS" > /dev/null
+  echo "    $U <- $ROLES"
+done
+sleep 2
+approve_and_commit roles
 
 # NOTE: tide-realm-admin is granted LAST (after enrollment + signed IdP settings),
 # because committing that grant flips the realm firstAdmin -> multiAdmin. No
@@ -403,10 +444,22 @@ INVITE_LINK=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -d '["link-tide-account-action"]')
 
+LINKS_FILE="$PROJECT_DIR/data/invite-links.txt"
+{
+  echo "A-1  $REALM_ADMIN_USERNAME  $INVITE_LINK"
+  for entry in $CAST; do
+    U="${entry%%:*}"
+    TOKEN="$(get_token)"
+    UID_=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$U&exact=true" -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+    L=$(curl -s -X POST "$TIDECLOAK_URL/admin/realms/$REALM_NAME/tideAdminResources/get-required-action-link?userId=$UID_&lifespan=43200" \
+      -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '["link-tide-account-action"]')
+    echo "--   $U  $L"
+  done
+} > "$LINKS_FILE"
 echo ""
 echo "============================================"
-echo "Open this link in your browser to link your admin Tide account:"
-echo "$INVITE_LINK"
+echo "INVITE LINKS (one per browser profile; also saved to data/invite-links.txt):"
+cat "$LINKS_FILE"
 echo "============================================"
 echo ""
 
@@ -436,10 +489,24 @@ BANNER
 echo "Waiting for admin to link Tide account (polling every 5s)..."
 while true; do
   TOKEN="$(get_token)"
-  KEY=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=admin" \
+  KEY=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$REALM_ADMIN_USERNAME&exact=true" \
     -H "Authorization: Bearer $TOKEN" | jq -r '.[0].attributes.tideUserKey[0] // empty')
   [ -n "$KEY" ] && echo "  Account linked." && break
   sleep 5
+done
+echo "Waiting for the rest of the cast to link (create data/SKIP_CAST_WAIT to continue without them)..."
+while [ "${SKIP_CAST_WAIT:-0}" != "1" ]; do
+  MISSING=""
+  TOKEN="$(get_token)"
+  for entry in $CAST; do
+    U="${entry%%:*}"
+    K=$(curl -s "$TIDECLOAK_URL/admin/realms/$REALM_NAME/users?username=$U&exact=true" -H "Authorization: Bearer $TOKEN" | jq -r '.[0].attributes.tideUserKey[0] // empty')
+    [ -z "$K" ] && MISSING="$MISSING $U"
+  done
+  [ -z "$MISSING" ] && echo "  All cast accounts linked." && break
+  echo "  still waiting for:$MISSING"
+  [ -f "$PROJECT_DIR/data/SKIP_CAST_WAIT" ] && echo "  (skip file found, continuing)" && break
+  sleep 15
 done
 
 # --- Step 10: Approve role assignment change requests ---
