@@ -24,7 +24,7 @@ With ordinary login, an operator could read or release anything. Mai's browser e
 
 ### 5. Prototype & storytelling
 
-The server dump shows every stored byte, yet **Try to open** gets "0 of 14 nodes would release this key". Once the notary approves, Long opens the bank logins, not Linh's care wishes. The prototype has one seat (licence limit). [Video](heirloom.mp4).
+The server dump shows every stored byte, yet **Try to open** gets "0 of 14 nodes would release this key". Once the notary approves, Long opens the bank logins, not Linh's care wishes. The prototype has one seat (licence limit). [Video](heirloom.mp4) ([YouTube](https://www.youtube.com/watch?v=nEB34KvRzlE)).
 
 ## Setup
 
@@ -151,7 +151,7 @@ Linh, Mai's daughter, has no account: the free licence links at most three.
 
 ### Demo video
 
-[`heirloom.mp4`](heirloom.mp4), at the repository root. What it shows: [Demo video](#demo-video).
+[`heirloom.mp4`](heirloom.mp4), at the repository root, also on [YouTube](https://www.youtube.com/watch?v=nEB34KvRzlE). What it shows: [Demo video](#demo-video).
 
 ### First thing to try
 
@@ -163,6 +163,8 @@ Do this before any release. In the `long` profile, open http://localhost:3000/op
 Then the release: in the `notary-duc` profile, open **Independent seats** (`/seats`), click **Release bank logins to Long**, then **Approve in the Tide enclave**. TideCloak files a change request instead of granting the role, and commits it only after the enclave approval. Long signs out and back in (new roles arrive at sign-in). On **For me** (`/heir`), the bank logins open, while Linh's care wishes stay refused.
 
 ## Demo video
+
+**Watch it on YouTube: [https://www.youtube.com/watch?v=nEB34KvRzlE](https://www.youtube.com/watch?v=nEB34KvRzlE)**
 
 [`heirloom.mp4`](heirloom.mp4) is in this repository and runs about two minutes. It was recorded against a local TideCloak and the live Tide network: the refusals and the enclave approval are real responses, not mock-ups. All people and data are synthetic. It covers four beats:
 
