@@ -24,7 +24,7 @@ With ordinary login, an operator could read or release anything. Mai's browser e
 
 ### 5. Prototype & storytelling
 
-The server dump shows every stored byte, yet **Try to open** gets "0 of 14 nodes would release this key". Once the notary approves, Long opens the bank logins, not Linh's care wishes. The prototype has one seat (licence limit). [Video](heirloom.mp4) ([YouTube](https://www.youtube.com/watch?v=nEB34KvRzlE)).
+The server dump shows every stored byte, yet **Try to open** gets "0 of 14 nodes would release this key". Once the notary approves, Long opens the bank logins, not Linh's care wishes. The prototype has one seat (licence limit). [Video](heirloom.mp4) ([YouTube](https://www.youtube.com/watch?v=hqr1gF16Kys)).
 
 ## Setup
 
@@ -151,7 +151,7 @@ Linh, Mai's daughter, has no account: the free licence links at most three.
 
 ### Demo video
 
-[`heirloom.mp4`](heirloom.mp4), at the repository root, also on [YouTube](https://www.youtube.com/watch?v=nEB34KvRzlE). What it shows: [Demo video](#demo-video).
+[`heirloom.mp4`](heirloom.mp4), at the repository root, also on [YouTube](https://www.youtube.com/watch?v=hqr1gF16Kys). What it shows: [Demo video](#demo-video).
 
 ### First thing to try
 
@@ -164,7 +164,7 @@ Then the release: in the `notary-duc` profile, open **Independent seats** (`/sea
 
 ## Demo video
 
-**Watch it on YouTube: [https://www.youtube.com/watch?v=nEB34KvRzlE](https://www.youtube.com/watch?v=nEB34KvRzlE)**
+**Watch it on YouTube: [https://www.youtube.com/watch?v=hqr1gF16Kys](https://www.youtube.com/watch?v=hqr1gF16Kys)**
 
 [`heirloom.mp4`](heirloom.mp4) is in this repository and runs about two minutes. It was recorded against a local TideCloak and the live Tide network: the refusals and the enclave approval are real responses, not mock-ups. All people and data are synthetic. It covers four beats:
 
