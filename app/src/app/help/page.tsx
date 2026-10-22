@@ -168,7 +168,7 @@ export default function HelpPage() {
           </li>
         </ol>
         <div className={styles.judgeFoot}>
-          <p className="help">Prefer to watch? The 2-minute video <code>heirloom-demo.mp4</code> in the repository shows the same run against TideCloak and the live Tide network. All people and data are fictional.</p>
+          <p className="help">Prefer to watch? The 2-minute video <code>heirloom.mp4</code> in the repository shows the same run against TideCloak and the live Tide network. All people and data are fictional.</p>
           <div className="actions"><Link className="button" href="/">Start on the home page<Icon name="arrowRight" size={18} /></Link></div>
         </div>
       </section>
