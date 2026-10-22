@@ -1,0 +1,189 @@
+/* Home: "The story in 4 steps" (cast row + guided steps). Every selector is scoped under .story
+   so it beats the global element rules in globals.css without !important. */
+
+.story { min-width: 0; }
+
+/* ---------- Who's who ---------- */
+.story .castTitle {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: .12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.story .cast {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  list-style: none;
+  background: var(--surface-sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.story .castItem { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.story .castHead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.story .castText { margin: 0; font-size: var(--fs-small); line-height: 1.5; color: var(--text-muted); overflow-wrap: anywhere; }
+
+.story .you {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* ---------- The 4 steps ---------- */
+.story .steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  list-style: none;
+}
+
+.story .step {
+  --tone: var(--sealed);
+  --tint: var(--sealed-tint);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--tone);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+.story .sealed { --tone: var(--sealed); --tint: var(--sealed-tint); }
+.story .refused { --tone: var(--refused); --tint: var(--refused-tint); }
+.story .tide { --tone: var(--tide); --tint: var(--tide-tint); }
+.story .released { --tone: var(--released); --tint: var(--released-tint); }
+
+/* The signed-in person's own step. */
+.story .mine {
+  border-color: var(--primary);
+  border-top-color: var(--tone);
+  box-shadow: 0 0 0 3px var(--tide-tint), var(--shadow-lift);
+}
+
+/* "Your step" / "Also you" sits on the top edge of the card. */
+.story .tag {
+  position: absolute;
+  top: -13px;
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+  line-height: 1.6;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.story .tagSoft { background: var(--tide-tint); color: var(--primary); border: 1px solid var(--tide-soft); }
+
+.story .stepHead { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.story .num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--tone);
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.story .stepTitle { margin: 0; font-size: var(--fs-h3); line-height: 1.3; }
+
+.story .result {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--text);
+}
+.story .result > svg { margin-top: 3px; color: var(--tone); }
+
+.story .how {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px;
+  background: var(--surface-sunk);
+  border-radius: var(--radius);
+}
+
+.story .howLabel {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.story .path { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+
+.story .pathItem {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.story .pathItem > svg { margin-top: 3px; color: var(--text-muted); }
+.story .pathItem strong { font-weight: 600; color: var(--text); }
+.story .pathItem code { font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 6px; }
+
+.story .action { margin-top: auto; padding-top: 4px; }
+.story .action > a { width: 100%; }
+
+.story .note { margin: var(--space-3) 0 0; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .story .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) var(--space-3); }
+  .story .cast { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .story .steps { grid-template-columns: 1fr; }
+  .story .cast { padding: var(--space-3); gap: var(--space-3); }
+}
+
+@media (max-width: 340px) {
+  .story .cast { grid-template-columns: 1fr; }
+}

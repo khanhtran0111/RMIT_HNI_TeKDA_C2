@@ -1,0 +1,88 @@
+/* Term: inline glossary toggletip. Selectors are scoped under .root so they beat the global
+   `button` and `button:hover:not(:disabled)` rules in globals.css without !important. */
+
+.root { position: relative; display: inline; }
+
+.root .trigger {
+  position: relative;
+  display: inline;
+  min-height: 0;
+  margin: 0;
+  padding: 0 1px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--text-muted);
+  text-underline-offset: 4px;
+  cursor: help;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+/* A taller hit area (about 44px) without changing the line height of the sentence. */
+.root .trigger::after { content: ""; position: absolute; inset: -9px -2px; }
+
+.root .trigger:hover:not(:disabled),
+.root .trigger[aria-expanded="true"] {
+  background: var(--tide-tint);
+  color: var(--primary);
+  border-color: transparent;
+  text-decoration-color: var(--primary);
+}
+
+.live { display: inline; }
+
+.bubble {
+  position: fixed;
+  z-index: 60;
+  display: block;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 12px 14px 12px 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--tide);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lift);
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  cursor: auto;
+  animation: term-in var(--dur-enter) var(--ease);
+}
+
+.bubbleTerm {
+  display: block;
+  margin-bottom: 2px;
+  font-family: var(--font-head);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--tide);
+}
+
+.bubbleText { display: block; }
+
+@keyframes term-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble { animation: none; }
+}

@@ -1,6 +1,6 @@
 // Builds the static public walkthrough into walkthrough/dist (deployed to Vercel as plain static files).
 // usage (from app/): node walkthrough/build.mjs [path-to-node_modules]
-import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -23,7 +23,9 @@ await build({
     b.onResolve({ filter: /^@tideorg\/js$/ }, to("tests/ui/tideorg.ts"));
   } }],
 });
-copyFileSync(resolve(root, "src/app/globals.css"), resolve(out, "style.css"));
+// globals.css first, then the CSS of imported *.module.css files (esbuild emits it next to the bundle).
+const moduleCss = resolve(out, "bundle.css");
+writeFileSync(resolve(out, "style.css"), readFileSync(resolve(root, "src/app/globals.css"), "utf8") + (existsSync(moduleCss) ? "\n" + readFileSync(moduleCss, "utf8") : ""));
 writeFileSync(resolve(out, "index.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Heirloom | interactive walkthrough</title><meta name="description" content="Heirloom: decide today who receives what, when you no longer can. Interactive walkthrough with simulated Tide responses.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap">

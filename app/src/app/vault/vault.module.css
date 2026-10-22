@@ -1,0 +1,76 @@
+/* Vault page: "Your plan" summary, template chips and the live "who can open" line.
+   Every selector is scoped under a parent class so it beats the global `button` and
+   `button:hover:not(:disabled)` rules in globals.css without !important. */
+
+.page { display: grid; gap: var(--space-5); min-width: 0; }
+
+/* ---- Your plan ---- */
+.plan .planHead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--space-2) var(--space-4); margin-bottom: var(--space-3); }
+.plan .planHead h2 { margin: 0; }
+.plan .planHead :global(.eyebrow) { margin-bottom: 2px; }
+.plan .planNote { margin: 0; max-width: 520px; font-size: var(--fs-small); line-height: 1.55; color: var(--text-muted); }
+
+.plan .stats { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.1fr) minmax(0, 1.3fr); gap: var(--space-3); margin: 0; }
+.plan .stat { display: grid; align-content: start; gap: 6px; min-width: 0; padding: var(--space-3); background: var(--surface-sunk); border: 1px solid var(--border); border-radius: var(--radius); }
+.plan .stat dt { display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .08em; line-height: 1.4; text-transform: uppercase; color: var(--text-muted); }
+.plan .stat dd { margin: 0; min-width: 0; font-size: var(--fs-small); line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+
+.plan .number { display: block; font-family: var(--font-head); font-size: var(--fs-state); font-weight: 700; line-height: 1.15; color: var(--sealed); }
+.plan .numberNote { display: block; color: var(--text-muted); }
+
+.plan .people { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); margin: 0; padding: 0; list-style: none; }
+.plan .people li { min-width: 0; }
+
+.plan .rule { display: block; font-family: var(--font-head); font-size: var(--fs-body); font-weight: 600; line-height: 1.4; color: var(--text); }
+.plan .ruleNote { display: block; color: var(--text-muted); }
+
+/* ---- Template chips ---- */
+.templates { display: grid; gap: 8px; min-width: 0; }
+.templates .groupLabel { margin: 0; font-weight: 600; font-size: var(--fs-small); }
+.templates .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.templates .chip {
+  min-height: 44px;
+  padding: 8px 14px;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+.templates .chip:hover:not(:disabled) { background: var(--tide-tint); border-color: var(--primary); color: var(--primary); }
+.templates .chip[aria-pressed="true"] { background: var(--tide-tint); border-color: var(--primary); color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.templates .chip[aria-pressed="true"]:hover:not(:disabled) { background: var(--tide-tint); color: var(--primary-hover); border-color: var(--primary-hover); }
+.templates .chip .chipIcon { flex: none; }
+
+/* ---- Live "who can open this" line, under the submit button ---- */
+.summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--sealed-tint);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--sealed);
+  border-radius: var(--radius);
+  font-size: var(--fs-small);
+  line-height: 1.6;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.summary .summaryIcon { flex: none; margin-top: 3px; color: var(--sealed); }
+.summary strong { font-weight: 700; }
+
+@media (max-width: 768px) {
+  .plan .stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .plan .stat:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 480px) {
+  .page { gap: var(--space-4); }
+  .plan .stats { grid-template-columns: minmax(0, 1fr); }
+  .plan .number { font-size: 24px; }
+}

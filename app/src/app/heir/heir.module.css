@@ -1,0 +1,148 @@
+/* /heir: the "What you can do here" intro and the sign-in-again tip.
+   Every rule is scoped under a parent class so globals.css element rules (h3, p, li) never win. */
+
+/* ---------- Intro: three numbered steps inside a Callout ---------- */
+.intro .list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intro .list > li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: start;
+  min-width: 0;
+}
+
+/* The <ol> already tells assistive tech the number, so the visible badge is aria-hidden. */
+.intro .num {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--tide-soft);
+  background: var(--tide-tint);
+  color: var(--primary);
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.intro .lead {
+  grid-column: 2;
+  font-family: var(--font-head);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.intro .text {
+  grid-column: 2;
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Tip: sign out, then sign in again (sealed state only) ---------- */
+.tip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  border: 2px solid var(--pending);
+  border-radius: var(--radius-card);
+  background: var(--pending-tint);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+
+.tip .icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--pending);
+  color: #FFFFFF;
+}
+
+.tip .kicker {
+  margin: 0 0 2px;
+  font-size: var(--fs-eyebrow);
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--pending);
+}
+
+.tip .title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.tip .body {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.tip .steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tip .steps > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tip .chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid #F5D98A;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.tip .arrow { display: inline-flex; color: var(--pending); }
+
+@media (max-width: 768px) {
+  .intro .list { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .tip { grid-template-columns: 1fr; padding: var(--space-3); }
+  .tip .icon { width: 40px; height: 40px; }
+}

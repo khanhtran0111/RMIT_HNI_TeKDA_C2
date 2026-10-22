@@ -25,7 +25,8 @@ async function main() {
 const root = process.cwd();
 const double = (file: string) => () => ({ path: resolve(root, "tests/ui", file) });
 const result = await build({
-  entryPoints: ["tests/ui/entry.tsx"], bundle: true, write: false, format: "esm", platform: "browser", jsx: "automatic",
+  // outfile (nothing is written) lets esbuild emit the CSS of imported *.module.css files as a second output.
+  entryPoints: ["tests/ui/entry.tsx"], bundle: true, write: false, outfile: "bundle.js", format: "esm", platform: "browser", jsx: "automatic",
   define: { "process.env.NODE_ENV": '"test"' },
   plugins: [{ name: "isolated-ui-doubles", setup(bundler) {
     bundler.onResolve({ filter: /(^|\/)Session$/ }, double("session.ts"));
@@ -35,6 +36,8 @@ const result = await build({
     bundler.onResolve({ filter: /^@tideorg\/js$/ }, double("tideorg.ts"));
   } }],
 });
+const bundleJs = result.outputFiles.find(file => file.path.endsWith(".js"))?.text ?? "";
+const moduleCss = result.outputFiles.find(file => file.path.endsWith(".css"))?.text ?? "";
 let items: Item[] = [];
 let changeRequests: ChangeRequest[] = [];
 let crCounter = 0;
@@ -61,8 +64,9 @@ const server = createServer(async (req, res) => {
   const json = (body: unknown, status = 200) => { res.statusCode = status; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(body)); };
   const empty = (status: number) => { res.statusCode = status; res.end(); };
   if (url.pathname === "/__test/reset") { reset(url.searchParams.has("empty")); return json({ ok: true }); }
-  if (url.pathname === "/bundle.js") { res.setHeader("Content-Type", "text/javascript"); return res.end(result.outputFiles[0].text); }
-  if (url.pathname === "/style.css") { res.setHeader("Content-Type", "text/css"); return res.end(readFileSync(resolve(root, "src/app/globals.css"))); }
+  if (url.pathname === "/bundle.js") { res.setHeader("Content-Type", "text/javascript"); return res.end(bundleJs); }
+  // globals.css first, then the CSS-module output, the same order Next.js loads them in.
+  if (url.pathname === "/style.css") { res.setHeader("Content-Type", "text/css"); return res.end(readFileSync(resolve(root, "src/app/globals.css"), "utf8") + "\n" + moduleCss); }
 
   if (url.pathname.startsWith("/api/")) {
     if (!persona) return json({ error: { code: "UNAUTHENTICATED", message: "UI test: no session proof" } }, 401);

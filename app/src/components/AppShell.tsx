@@ -17,7 +17,8 @@ export function AppShell({ children, title, eyebrow, description }: { children: 
     { href: "/heir", label: "For me", show: ["linh", "long"].includes(session.username) },
     { href: "/operator", label: "Server dump", show: session.authenticated },
     { href: "/seats", label: "Independent seats", show: session.isSeat },
-    { href: "/setup", label: "Setup", show: session.isSeat }];
+    { href: "/setup", label: "Setup", show: session.isSeat },
+    { href: "/help", label: "How it works", show: true }];
   const roleLine = session.roles.includes("vault-owner-mai") ? "Vault owner" : session.isSeat ? "Approver seat" : ["linh", "long"].includes(session.username) ? "Family member" : "Signed in";
   async function signOut() { try { await session.logout(); } catch { setAuthError("Sign-out could not complete. Try signing out again."); } }
   return <>

@@ -7,20 +7,29 @@ import { useSession } from "@/components/Session";
 import { useApiFetch, errorMessage } from "@/components/VaultData";
 import { ItemCard } from "@/components/ItemCard";
 import { Icon, type IconName } from "@/components/Icon";
-import { Callout, Card, Person, SectionHeader, Term } from "@/components/ui";
+import { Callout, Card, Person, SectionHeader } from "@/components/ui";
 import { CompareCard, TIDE_NETWORK, TideProof } from "@/components/tide";
+import { Term } from "@/components/Term";
 import { apiJson, createVaultClient } from "@/lib/tide/client";
 import { tryReleaseToLong } from "@/lib/operator";
 import { heirRoleForRecord } from "@/lib/records";
 import type { OperatorStore } from "@/lib/store";
+import styles from "./operator.module.css";
 
 type DecodedRow = { id: string; contractId?: string; subjectId?: string; subjectType?: string; recordId?: string; roles?: string; signed?: boolean; error?: string };
 
-const SEAT_EXPLAINED = "An independent approver, such as Mai's notary, who must agree before anything is released. Heirloom is never a seat.";
-const ENCLAVE_EXPLAINED = "Tide's secure approval window. It runs apart from Heirloom's pages, so Heirloom cannot approve on anyone's behalf.";
-const CIPHERTEXT_EXPLAINED = "Scrambled data that cannot be read without its key.";
-const POLICY_EXPLAINED = "A signed rule that says which role may open which record. The Tide network checks it on every attempt.";
-const DPOP_EXPLAINED = "Proof of possession: a signature showing the token is being used by the browser it was issued to.";
+/** Who answers each attempt on this page. Presentation only: the attempts themselves are unchanged. */
+const DECIDERS = {
+  tide: { name: "The Tide network", icon: "network" },
+  tidecloak: { name: "TideCloak", icon: "key" },
+  api: { name: "Heirloom's own API", icon: "server" },
+} as const satisfies Record<string, { name: string; icon: IconName }>;
+type Decider = keyof typeof DECIDERS;
+const ATTEMPTS: { step: 1 | 2 | 3; title: string; decider: Decider }[] = [
+  { step: 1, title: "Open a sealed item", decider: "tide" },
+  { step: 2, title: "Release an item to Long", decider: "tidecloak" },
+  { step: 3, title: "Skip our API's proof check", decider: "api" },
+];
 
 export default function OperatorPage() {
   const session = useSession();
@@ -93,7 +102,12 @@ function OperatorContent() {
     return undefined;
   };
 
-  return <div className="stack-lg">
+  return <div className={`stack-lg ${styles.root}`}>
+    <p className={styles.explainer}>
+      <span className={styles.explainerLabel}><Icon name="eye" size={18} />What you are looking at</span>
+      <span className={styles.explainerText}>Everything Heirloom&apos;s server holds, as an insider would see it. Each item&apos;s content is <Term id="ciphertext">ciphertext</Term>, the signed <Term id="policy">policies</Term> say who may open it, and only the <Term id="tide-network">Tide network</Term> can release a key, never us.</span>
+    </p>
+
     <Card as="section" tone="tide" labelledBy="dump-banner-h">
       <h2 id="dump-banner-h" className="with-icon"><Icon name="server" size={28} />Everything Heirloom stores. No key exists on our side.</h2>
       <p>Below is every file on our server: {items.length} sealed {items.length === 1 ? "item" : "items"} and {policyCount} signed {policyCount === 1 ? "policy" : "policies"}. Use them to try to get in. Each attempt is refused, and each result names who refused it.</p>
@@ -103,7 +117,7 @@ function OperatorContent() {
     <CompareCard title="An ordinary app vs Heirloom on Tide" description="The same copy of this server, in two different products." rows={[
       { label: "A copy of this server", ordinary: "This dump plus one admin account is every family's secrets.", tide: "This dump opens nothing: there is no key on our side." },
       { label: "Opening an item", ordinary: "The server decrypts for whoever it trusts.", tide: `Independent Tide nodes must agree: ${TIDE_NETWORK.required} of ${TIDE_NETWORK.total} on ${TIDE_NETWORK.label}.` },
-      { label: "Granting access", ordinary: "One admin changes a permission.", tide: <>Only a <Term explain={SEAT_EXPLAINED}>seat</Term> can, approving in the <Term explain={ENCLAVE_EXPLAINED}>Tide enclave</Term>.</> },
+      { label: "Granting access", ordinary: "One admin changes a permission.", tide: <>Only a <Term id="seat">seat</Term> can, approving in the <Term id="enclave">Tide enclave</Term>.</> },
     ]} />
 
     <div className="grid-2">
@@ -114,8 +128,8 @@ function OperatorContent() {
             const id = `file-${name.replace(/\W+/g, "-")}`;
             return <Card as="section" key={name} labelledBy={id}>
               <h3 id={id} className="with-icon mono"><Icon name="fileText" size={20} />{name}</h3>
-              {name === "items.json" && <p className="help">{items.length} {items.length === 1 ? "item" : "items"}. Titles and recipients are readable; the content of each item is <Term explain={CIPHERTEXT_EXPLAINED}>ciphertext</Term>, sealed in its owner&apos;s browser.</p>}
-              {name === "policies.json" && <p className="help">{policyCount} signed <Term explain={POLICY_EXPLAINED}>{policyCount === 1 ? "policy" : "policies"}</Term>: which role may open which record.</p>}
+              {name === "items.json" && <p className="help">{items.length} {items.length === 1 ? "item" : "items"}. Titles and recipients are readable; the content of each item is <Term id="ciphertext">ciphertext</Term>, sealed in its owner&apos;s browser.</p>}
+              {name === "policies.json" && <p className="help">{policyCount} signed <Term id="policy">{policyCount === 1 ? "policy" : "policies"}</Term>: which role may open which record.</p>}
               <pre className="raw-store" tabIndex={0}>{JSON.stringify(value, null, 2)}</pre>
             </Card>;
           })}
@@ -138,8 +152,18 @@ function OperatorContent() {
       <section aria-labelledby="dump-attempts-h">
         <SectionHeader id="dump-attempts-h" eyebrow="Try to use it" title="Attempts" description="Three ways to try to get in with this dump, using your own identity. Three different gatekeepers answer." />
         <div className="stack">
+          <div className="stack-sm">
+            <p className="help" id="dump-deciders-h" style={{ margin: 0 }}>Who decides each attempt:</p>
+            <ol className={styles.deciders} aria-labelledby="dump-deciders-h">
+              {ATTEMPTS.map(attempt => <li key={attempt.step}>
+                <span className={styles.deciderNum} aria-hidden="true">{attempt.step}</span>
+                <span className={styles.deciderWhat}>{attempt.title}</span>
+                <DeciderBadge decider={attempt.decider} label={false} />
+              </li>)}
+            </ol>
+          </div>
           <section aria-labelledby="attempt-open-h" className="stack">
-            <AttemptHeader step={1} id="attempt-open-h" title="Open a sealed item" icon="network" decider="Decided by the Tide network">
+            <AttemptHeader attempt={ATTEMPTS[0]} id="attempt-open-h">
               Each item goes to the Tide network with its recipient&apos;s policy, exactly as the recipient would send it. This page adds no check of its own. On {TIDE_NETWORK.label}, {TIDE_NETWORK.required} of {TIDE_NETWORK.total} independent nodes compare the policy with your roles.
             </AttemptHeader>
             {!!heldRecords.length && <Callout tone="warning" title="Your session already holds an heir role">
@@ -151,8 +175,8 @@ function OperatorContent() {
 
           <Card as="section" labelledBy="attempt-release-h">
             <div className="stack">
-              <AttemptHeader step={2} id="attempt-release-h" title="Release an item to Long" icon="key" decider="Decided by TideCloak">
-                Sends TideCloak, Tide&apos;s identity server, the same role grant a seat sends to release Mai&apos;s bank logins. It goes straight from your browser, signed with your own token.
+              <AttemptHeader attempt={ATTEMPTS[1]} id="attempt-release-h">
+                Sends <Term id="tidecloak">TideCloak</Term>, Tide&apos;s identity server, the same role grant a seat sends to release Mai&apos;s bank logins. It goes straight from your browser, signed with your own token.
               </AttemptHeader>
               <div className="stack-sm">
                 <div className="actions"><button className="button-secondary" disabled={!!busy || !idsReady || session.isSeat} onClick={releaseProbe}><Icon name="send" size={18} />{busy === "release" ? "Calling TideCloak…" : "Try to release to Long"}</button></div>
@@ -180,8 +204,8 @@ function OperatorContent() {
 
           <Card as="section" labelledBy="attempt-api-h">
             <div className="stack">
-              <AttemptHeader step={3} id="attempt-api-h" title="Skip our API's proof check" icon="server" decider="Decided by Heirloom's own API">
-                Asks our server for the items with your signed-in token but without its <Term explain={DPOP_EXPLAINED}>DPoP</Term> proof. An ordinary check, the kind every app has.
+              <AttemptHeader attempt={ATTEMPTS[2]} id="attempt-api-h">
+                Asks our server for the items with your signed-in token but without its <Term id="dpop">DPoP</Term> proof. An ordinary check, the kind every app has.
               </AttemptHeader>
               <div className="stack-sm">
                 <div className="actions"><button className="button-secondary" disabled={!!busy} onClick={plainProbe}><Icon name="server" size={18} />{busy === "plain" ? "Calling our API…" : "Call our API without DPoP"}</button></div>
@@ -236,11 +260,21 @@ function tideRoles(roles?: string): string[] {
 }
 
 /** Attempt number, title, who decides, and one plain-language line on what the attempt sends. */
-function AttemptHeader({ step, id, title, icon, decider, children }: { step: number; id: string; title: string; icon: IconName; decider: string; children: ReactNode }) {
+function AttemptHeader({ attempt, id, children }: { attempt: (typeof ATTEMPTS)[number]; id: string; children: ReactNode }) {
   return <div>
-    <p className="eyebrow">Attempt {step} of 3</p>
-    <h3 id={id}>{title}</h3>
-    <p className="with-icon" style={{ marginBottom: "var(--space-2)" }}><Icon name={icon} size={20} /><strong>{decider}</strong></p>
+    <p className="eyebrow">Attempt {attempt.step} of 3</p>
+    <h3 id={id}>{attempt.title}</h3>
+    <p className={styles.attemptDecider}><DeciderBadge decider={attempt.decider} /></p>
     <p className="help">{children}</p>
   </div>;
+}
+
+/** "Who decides: TideCloak" as a pill, toned per gatekeeper (Tide network, TideCloak, our API). */
+function DeciderBadge({ decider, label = true }: { decider: Decider; label?: boolean }) {
+  const { name, icon } = DECIDERS[decider];
+  return <span className={`${styles.decider} ${styles[decider]}`}>
+    <Icon name={icon} size={16} />
+    {label ? <span className={styles.deciderLabel}>Who decides<span className="sr-only">:</span></span> : <span className="sr-only">Decided by</span>}
+    <strong>{name}</strong>
+  </span>;
 }

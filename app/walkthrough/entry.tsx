@@ -5,12 +5,13 @@ import VaultPage from "../src/app/vault/page";
 import HeirPage from "../src/app/heir/page";
 import OperatorPage from "../src/app/operator/page";
 import SeatsPage from "../src/app/seats/page";
+import HelpPage from "../src/app/help/page";
 import { installMockApi } from "./mockApi";
 import { persona, resetAll } from "./state";
 
 installMockApi();
 
-const pages: Record<string, React.ComponentType> = { "/": HomePage, "/vault": VaultPage, "/heir": HeirPage, "/operator": OperatorPage, "/seats": SeatsPage };
+const pages: Record<string, React.ComponentType> = { "/": HomePage, "/vault": VaultPage, "/heir": HeirPage, "/operator": OperatorPage, "/seats": SeatsPage, "/help": HelpPage };
 const Page = pages[window.location.pathname] ?? HomePage;
 
 const STEPS = [

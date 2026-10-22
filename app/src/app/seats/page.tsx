@@ -14,8 +14,10 @@ import { AccessGate, AppShell } from "@/components/AppShell";
 import { useSession } from "@/components/Session";
 import { Icon } from "@/components/Icon";
 import { StatusChip } from "@/components/StatusChip";
-import { Callout, Card, Person, SectionHeader, Stepper, Term, displayName, type Step } from "@/components/ui";
+import { Callout, Card, Person, SectionHeader, Stepper, displayName, type Step } from "@/components/ui";
+import { Term } from "@/components/Term";
 import { CompareCard, TideProof } from "@/components/tide";
+import styles from "./seats.module.css";
 import {
   approvalCount,
   asTime,
@@ -38,6 +40,14 @@ const ENCLAVE_WAIT_HINT =
 const HEIR_USERNAME = "long";
 const CAPACITY_COMMENT = "Capacity assessment CA-DEMO-07 attached (synthetic)";
 const DEFAULT_DENY_REASON = "Wrong request: Mai did not name Long for this item.";
+
+// The "Before you approve" checklist on each pending request. Presentation only: it gates the
+// Approve button in this browser and sends nothing. TideCloak's own checks are unchanged.
+const CHECKS: readonly string[] = [
+  "I confirmed the request is for the person Mai named",
+  "I reviewed the capacity assessment (synthetic)",
+  "I understand approving gives Long access to this item only",
+];
 
 type RecordId = "mai-care" | "mai-bank";
 type PolicyPair = { owner: string | null; heir: string | null };
@@ -88,6 +98,8 @@ type CardState = {
   result?: CardResult;
   /** requestModel from phase 1, kept when the enclave did not finish, so it can be reopened. */
   retryModel?: string;
+  /** Ticks in the "Before you approve" checklist, one per entry in CHECKS. UI gating only. */
+  checks?: boolean[];
 };
 
 export default function SeatsPage() {
@@ -497,9 +509,9 @@ export default function SeatsPage() {
           title="Releasing an item needs a seat"
           description={
             <>
-              A <Term explain="An independent approver who must agree before anything is released">seat</Term> is an
-              independent person Mai trusts. Nothing is released without a seat&apos;s approval, and a seat cannot read the
-              items either.
+              A <Term id="seat">seat</Term> is an independent person Mai trusts. Nothing is released until a seat
+              approves it in the <Term id="enclave">Tide enclave</Term>, a signing window outside Heirloom. A seat cannot
+              read the items either.
             </>
           }
         />
@@ -607,13 +619,18 @@ export default function SeatsPage() {
                     const d = describe(c);
                     const st = cards[c.id] ?? {};
                     const committed = st.result?.tone === "approved";
+                    const ticks = CHECKS.map((_, i) => !!st.checks?.[i]);
+                    const ticked = ticks.filter(Boolean).length;
+                    const ready = ticked === CHECKS.length;
+                    const toggleCheck = (i: number, on: boolean) =>
+                      patchCard(c.id, { checks: ticks.map((v, j) => (j === i ? on : v)) });
                     const steps: Step[] = [
                       { label: "Requested", detail: c.requestedBy ? `By ${displayName(c.requestedBy)}` : undefined, state: "done" },
                       { label: "Approved", detail: approvalCount(c), state: committed ? "done" : "current" },
                       { label: "Released", detail: d.user && d.user !== "someone" ? `Opens for ${d.user} at the next sign-in` : "At the next sign-in", state: committed ? "done" : "upcoming" },
                     ];
                     return (
-                      <Card as="li" key={c.id} className="seats-request">
+                      <Card as="li" key={c.id} className={`seats-request ${styles.request}`}>
                         <div className="seats-request-head">
                           <h3>{d.sentence}</h3>
                           <StatusChip state="pending" />
@@ -644,6 +661,25 @@ export default function SeatsPage() {
                           </label>
                           <p className="help">A synthetic document (CA-DEMO-07), added to the request as a comment before you approve.</p>
                         </div>
+                        <fieldset className={styles.checklist}>
+                          <legend className={styles.legend}>
+                            <Icon name="shieldCheck" size={18} />
+                            <span className={styles.legendText}>Before you approve</span>
+                            <span className={`${styles.count}${ready ? ` ${styles.countDone}` : ""}`} aria-hidden="true">
+                              {ticked} of {CHECKS.length}
+                            </span>
+                          </legend>
+                          <ul className={styles.list}>
+                            {CHECKS.map((text, i) => (
+                              <li key={text} className={styles.item}>
+                                <label className={styles.check}>
+                                  <input type="checkbox" checked={ticks[i]} onChange={(e) => toggleCheck(i, e.target.checked)} />
+                                  <span>{text}</span>
+                                </label>
+                              </li>
+                            ))}
+                          </ul>
+                        </fieldset>
                         <div className="field">
                           <label htmlFor={`deny-reason-${c.id}`}>Reason, if you deny</label>
                           <input
@@ -653,7 +689,11 @@ export default function SeatsPage() {
                           />
                         </div>
                         <div className="actions">
-                          <button onClick={() => void approve(c)} disabled={!!st.busy}>
+                          <button
+                            onClick={() => void approve(c)}
+                            disabled={!!st.busy || !ready}
+                            aria-describedby={`approve-why-${c.id}`}
+                          >
                             <Icon name="shieldCheck" size={18} />
                             Approve in the Tide enclave
                           </button>
@@ -662,6 +702,14 @@ export default function SeatsPage() {
                             Deny
                           </button>
                         </div>
+                        <p id={`approve-why-${c.id}`} className={`${styles.why}${ready ? ` ${styles.whyReady}` : ""}`}>
+                          <Icon name={ready ? "check" : "lock"} size={18} />
+                          <span>
+                            {ready
+                              ? "All 3 checks done. You can approve now."
+                              : `Approve unlocks when all 3 checks are ticked (${ticked} of 3 done). You can deny at any time.`}
+                          </span>
+                        </p>
                         <p className="help">
                           Approving opens the Tide enclave, a secure window where you sign with your own key. Heirloom cannot
                           approve for you.
@@ -777,7 +825,7 @@ export default function SeatsPage() {
           description={
             <>
               Each item has a signed{" "}
-              <Term explain="A signed rule the Tide network checks before it releases a key">policy</Term>. They were signed once
+              <Term id="policy">policy</Term>. They were signed once
               at setup; the Tide network checks them on every open, and Heirloom cannot change them.
             </>
           }

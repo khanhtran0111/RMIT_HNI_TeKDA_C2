@@ -1,0 +1,192 @@
+/* /help ("How Heirloom works"). Every selector is scoped under .page so it beats the
+   global element rules in globals.css (p, h3, table, button) without !important. */
+
+.page { display: grid; gap: var(--space-6); min-width: 0; }
+
+.page .section { min-width: 0; scroll-margin-top: var(--space-4); }
+
+/* ---------- On this page ---------- */
+.page .toc {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.page .tocLabel {
+  margin: 0;
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: .12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.page .toc ul { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+
+.page .toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--primary);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.page .toc a:hover { background: var(--tide-tint); border-color: var(--primary); color: var(--primary-hover); }
+
+/* ---------- In one minute ---------- */
+.page .prose { display: grid; gap: var(--space-3); max-width: 760px; }
+.page .prose p { margin: 0; font-size: var(--fs-body); line-height: 1.65; }
+
+/* ---------- Who can do what ---------- */
+.page .tableWrap { margin-top: 0; }
+.page .whoTable { min-width: 0; }
+.page .whoTable thead th { white-space: normal; }
+.page .whoTable tbody th { width: 30%; font-weight: 400; }
+.page .whoTable td { width: 35%; }
+.page .whoTable tbody tr:last-child th, .page .whoTable tbody tr:last-child td { border-bottom: 0; }
+/* The company row reads as the odd one out: it holds the data but has no power. */
+.page .whoTable tbody tr:last-child { background: var(--surface-sunk); }
+
+.page .answer { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-small); line-height: 1.4; }
+.page .answer strong { font-weight: 700; }
+.page .yes { color: var(--approved); }
+.page .later { color: var(--pending); }
+.page .no { color: var(--refused); }
+
+.page .answerDetail { display: block; margin-top: 2px; font-size: var(--fs-small); line-height: 1.5; color: var(--text-muted); }
+
+/* ---------- What comes next ---------- */
+.page .future {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page .futureItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+/* Five items: the last one spans the row so the grid has no hole. */
+.page .futureItem:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+.page .futureIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--tide-tint);
+  color: var(--primary);
+}
+
+.page .futureText { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+.page .futureText h3 { margin: 0; }
+.page .futureText p { margin: 0; color: var(--text-muted); font-size: var(--fs-small); line-height: 1.55; }
+
+.page .today {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 1.6;
+}
+.page .todayReady { background: var(--approved-tint); color: var(--approved); border-color: #A7E3B9; }
+.page .todayPartial { background: var(--pending-tint); color: var(--pending); border-color: #F5D58A; }
+
+.page .callouts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.page .calloutText { margin: 0; }
+.page .limits { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* ---------- For judges ---------- */
+.page .judges { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; max-width: 860px; }
+
+.page .judges > li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius);
+}
+.page .judges p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.page .judges code, .page .judgeFoot code { font-size: 15px; background: var(--surface-sunk); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 6px; }
+
+.page .judgeNum {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.page .judgeTitle { font-family: var(--font-head); font-size: var(--fs-h3); font-weight: 600; color: var(--text); margin-bottom: 2px; }
+
+.page .judgeFoot { display: grid; gap: var(--space-3); margin-top: var(--space-4); max-width: 860px; }
+.page .judgeFoot p { margin: 0; }
+
+/* ---------- Glossary ---------- */
+.page .glossary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0; }
+
+.page .glossaryItem {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--tide);
+  border-radius: var(--radius);
+  min-width: 0;
+  scroll-margin-top: var(--space-4);
+}
+.page .glossaryItem dt { font-family: var(--font-head); font-weight: 700; font-size: 18px; color: var(--text); margin-bottom: 4px; }
+.page .glossaryItem dd { margin: 0; color: var(--text-muted); font-size: var(--fs-small); line-height: 1.55; }
+.page .glossaryItem:target { border-color: var(--primary); box-shadow: 0 0 0 3px var(--tide-tint); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .page { gap: var(--space-5); }
+  .page .future, .page .callouts, .page .glossary { grid-template-columns: 1fr; }
+  .page .futureItem:last-child:nth-child(odd) { grid-column: auto; }
+}
+
+@media (max-width: 480px) {
+  .page .toc { padding: var(--space-3); }
+  .page .futureItem, .page .judges > li { padding: var(--space-3); }
+  .page .whoTable th, .page .whoTable td { padding: 10px 8px; }
+  .page .whoTable tbody th { width: 34%; }
+  .page .whoTable td { width: 33%; }
+  .page .whoTable tbody th :global(.avatar) { display: none; }
+}

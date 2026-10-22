@@ -163,7 +163,15 @@ test("demo path end to end (harness)", async ({ page, request }, info) => {
     await expect(page.getByText(pending.id).first()).toBeVisible();
     await expect(page.getByText(/pending/i).first()).toBeVisible();
     await page.screenshot({ path: info.outputPath("seats-pending.png"), fullPage: true });
-    await page.getByRole("button", { name: /approve/i }).first().click();
+    // Approve stays disabled until the seat ticks the three "Before you approve" checks.
+    // (Not /capacity assessment/i alone: that also matches the separate "Attach the capacity assessment" box.)
+    const approveButton = page.getByRole("button", { name: /approve/i }).first();
+    await expect(approveButton).toBeDisabled();
+    for (const name of [/person Mai named/i, /reviewed the capacity assessment/i, /this item only/i]) {
+      await page.getByRole("checkbox", { name }).first().check();
+    }
+    await expect(approveButton).toBeEnabled();
+    await approveButton.click();
     await expect.poll(async () => (await changeRequests(request, "APPROVED")).map(c => c.id)).toEqual([pending.id]);
     expect(await changeRequests(request, "PENDING")).toHaveLength(0);
     expect(approvals).toEqual([{}, { requestModel: b64(`TEST-REQUEST-${pending.id}`) }]);

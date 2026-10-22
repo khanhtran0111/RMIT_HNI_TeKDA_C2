@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AccessSummary, type AccessState } from "./AccessSummary";
 import { RefusalPanel } from "./RefusalPanel";
 import { StatusChip } from "./StatusChip";
 import { Icon } from "./Icon";
@@ -24,6 +25,12 @@ export function ItemCard({ item, access, released = false, open, operator = fals
   const proofLines = access === "owner"
     ? ["The Tide network checked this item’s owner policy and confirmed your role.", "Decrypted here, in your browser. Heirloom’s server still holds the content only as ciphertext."]
     : ["Released: the Tide network confirmed you now hold the heir role for this item.", "Decrypted here, in your browser. Heirloom’s server still holds the content only as ciphertext."];
+  // "Who can open this?" follows the recipient's path. While a request is in flight it keeps the last
+  // known step (busy clears error and plaintext); the owner's own reads never count as "Opened".
+  const accessState: AccessState = error !== undefined ? "refused"
+    : access === "heir" && plaintext !== null ? "opened"
+    : access === "heir" && released ? "released"
+    : "sealed";
   return <article className={`item${state === "released" ? " item-released" : ""}`} aria-busy={busy || undefined}>
     <div className="item-heading">
       <div className="item-title"><span className="item-icon" aria-hidden="true"><Icon name={state === "released" ? "unlock" : "lock"} size={20} /></span><h3>{item.title}</h3></div>
@@ -35,6 +42,7 @@ export function ItemCard({ item, access, released = false, open, operator = fals
       <span>Record <code>{item.recordId}</code></span>
       <time dateTime={item.createdAt}>{new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(item.createdAt))}</time>
     </div>
+    {!operator && <AccessSummary recipientName={displayName(item.recipientUsername)} ownerName={displayName(item.ownerUsername)} state={accessState} isOwnerView={access === "owner"} isRecipientView={access === "heir" && !otherRecipient} />}
     {otherRecipient && <p className="help item-note">Addressed to {displayName(item.recipientUsername)}. Opening sends the same request to the Tide network so it can enforce the item’s policy.</p>}
     <CipherBlock text={item.ciphertext} caption="Encrypted in the owner’s browser before upload. Heirloom’s server cannot read it." />
     <div className="actions">

@@ -5,6 +5,7 @@ import HeirPage from "../../src/app/heir/page";
 import OperatorPage from "../../src/app/operator/page";
 import SeatsPage from "../../src/app/seats/page";
 import SetupPage from "../../src/app/setup/page";
-const pages: Record<string, React.ComponentType> = { "/": HomePage, "/vault": VaultPage, "/heir": HeirPage, "/operator": OperatorPage, "/seats": SeatsPage, "/setup": SetupPage };
+import HelpPage from "../../src/app/help/page";
+const pages: Record<string, React.ComponentType> = { "/": HomePage, "/vault": VaultPage, "/heir": HeirPage, "/operator": OperatorPage, "/seats": SeatsPage, "/setup": SetupPage, "/help": HelpPage };
 const Page = pages[window.location.pathname] ?? HomePage;
 createRoot(document.getElementById("root")!).render(<Page />);
