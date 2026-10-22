@@ -7,7 +7,7 @@
 # It creates, changes, approves or denies nothing.
 #
 # Output: data/heirloom/demo-ids.json =
-#   {"realm","long","linh","heir-bank-mai","heir-care-mai","authServerUrl"}
+#   {"realm","long","heir-bank-mai","heir-care-mai","authServerUrl"}   (3-account cast: no linh)
 #
 # Prerequisites: curl, jq, a running TideCloak with the heirloom realm, KC_BOOTSTRAP_ADMIN_PASSWORD in .env
 
@@ -93,7 +93,6 @@ role_id() {
 
 echo "==> Looking up demo ids in realm '$REALM_NAME' at $TIDECLOAK_URL (read-only)"
 LONG_ID="$(user_id long)"
-LINH_ID="$(user_id linh)"
 BANK_ROLE_ID="$(role_id heir-bank-mai)"
 CARE_ROLE_ID="$(role_id heir-care-mai)"
 
@@ -101,11 +100,10 @@ mkdir -p "$OUT_DIR"
 jq -n \
   --arg realm "$REALM_NAME" \
   --arg long "$LONG_ID" \
-  --arg linh "$LINH_ID" \
   --arg bank "$BANK_ROLE_ID" \
   --arg care "$CARE_ROLE_ID" \
   --arg url "$TIDECLOAK_URL" \
-  '{realm:$realm, long:$long, linh:$linh, "heir-bank-mai":$bank, "heir-care-mai":$care, authServerUrl:$url}' \
+  '{realm:$realm, long:$long, "heir-bank-mai":$bank, "heir-care-mai":$care, authServerUrl:$url}' \
   > "$OUT_FILE.tmp"
 mv "$OUT_FILE.tmp" "$OUT_FILE"
 
