@@ -8,6 +8,9 @@ Two devs, one repo, one spec. **Read `docs/SPEC.md` Part 1 once (15 min), then y
 | Branch | `a/realm` | `b/ui` |
 | Machine for the demo | the recording machine | builds on own laptop, tests on Vinh's PC from 13:30 |
 
+
+> **Change 13:25 (read SPEC "SPEC changed 13:25"):** only 3 Tide accounts exist: `notary-duc` (seat), `mai` (owner), `long` (heir). For you: `/operator` and `/api/operator/store` are open to **any signed-in user** (use `withAuth`), heading "Server dump (what Heirloom stores)"; there is no `linh` or `ops`; the heir page only needs to work for `long`. Everything else in your track is unchanged. App is running on Vinh's PC; `tidecloak.json` will be sent to you in chat.
+
 ## Dev B - what you do, in order
 
 **Setup (10 min)**

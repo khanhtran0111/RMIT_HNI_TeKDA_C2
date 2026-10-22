@@ -18,6 +18,9 @@ Mai, 68, has an early dementia diagnosis. While she is still lucid she seals, in
 
 **Honest limits (go in README verbatim):** capacity or death is a human judgement backed by a mocked document; Heirloom cannot make a bank or Apple open an account, it passes on what Mai stored; nothing un-reads what an heir has read; 2 of 3 seats colluding can release early, which is why no seat is the company or a recipient.
 
+
+> **SPEC changed 13:25 (sections 1, 2, 6): 3 accounts, not 7.** The free Tide licence on this realm refused new accounts ("Subscription ... has exceeded its total user count") after 3 links. The cast is now **`notary-duc` (the only seat, tide-realm-admin), `mai` (owner), `long` (heir)**. `dr-hanh`, `thu`, `linh`, `ops` do not exist. Consequences: (1) no "Pending 1 of 2" beat: with one admin the threshold is 1, so the notary's single approval releases; the README states that production uses 2 of 3 seats. (2) `/operator` has no operator account: the page is open to **any signed-in user** and is labelled "Server dump (what Heirloom stores)"; in the demo `long` uses it before the release, so "even holding every byte and every policy" is shown by the son. `/api/operator/store` therefore uses `withAuth`, not `withRole("operator")`. (3) Linh is gone: `mai-care` stays sealed to everyone and is the item Long is refused on after the release. (4) New beat: the notary, who can release, cannot read either (Try to open as notary -> refused). If more accounts become available, the original 7-person cast comes back unchanged.
+
 ## 2. Cast, realm, roles (synthetic, fixed names)
 Realm `heirloom`, client `heirloom-client`, app `http://localhost:3000`, TideCloak `http://localhost:8080` (Dev A's machine). All people are fictional.
 
