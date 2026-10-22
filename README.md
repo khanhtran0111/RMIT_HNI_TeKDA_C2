@@ -175,6 +175,8 @@ Then the release: in the `notary-duc` profile, open **Independent seats** (`/sea
 
 [heirloom-unlocked.vercel.app](https://heirloom-unlocked.vercel.app) lets anyone click through the story without an account. It runs the real Heirloom pages in your browser with **simulated** Tide and API responses, and every page says so. The steps in the top bar: 1. Mai seals her items, 2. Long searches the server dump, 3. Long tries to open, 4. Notary Duc releases (a browser dialog stands in for the Tide enclave), 5. Long, after the release. **Start over** resets it.
 
+Two more pages, in the app and on the walkthrough: [**/vision**](https://heirloom-unlocked.vercel.app/vision), the platform vision (eight doors, numbers at scale, roadmap), and [**/help**](https://heirloom-unlocked.vercel.app/help), a plain-language guide with a glossary and what judges should try first.
+
 The real prototype needs the local TideCloak (see [Setup](#setup)); the demo video shows the run against TideCloak and the live Tide network. Source: `app/walkthrough/`. To build it, run `node walkthrough/build.mjs` from `app/`, then deploy `app/walkthrough/dist` as static files.
 
 ## How it works
@@ -213,6 +215,8 @@ The engine is the same four steps for every use: **seal** it in your own browser
 **Why it matters at scale.** 57 million people were living with dementia in 2021, with nearly 10 million new cases a year ([WHO](https://www.who.int/news-room/fact-sheets/detail/dementia)). About $124 trillion is expected to pass between generations in the US alone through 2048 ([Cerulli Associates, 2024](https://www.cerulli.com/press-releases/cerulli-anticipates-124-trillion-in-wealth-will-transfer-through-2048)). Yet only 36.7% of US adults have any advance directive ([Yadav et al., Health Affairs, 2017](https://pure.psu.edu/en/publications/approximately-one-in-three-us-adults-completes-any-type-of-advanc/)).
 
 **Why only Tide makes this credible.** With ordinary login and backend permissions, whoever runs the server, or one admin, can always read or grant: a promise, not a guarantee. With Tide, no one ever holds the whole key, 14 of 20 independent nodes enforce the signed rule, and a release is a governed change that seats approve in the Tide enclave.
+
+See it as a page: [heirloom-unlocked.vercel.app/vision](https://heirloom-unlocked.vercel.app/vision).
 
 **Roadmap.**
 - **Now:** this prototype. One family, real Tide network, real enclave approval, one seat (free licence).
