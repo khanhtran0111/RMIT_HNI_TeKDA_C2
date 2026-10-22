@@ -6,7 +6,7 @@
 // The role check below is UI gating only. TideCloak itself refuses a role grant from anyone who is
 // not a realm admin, and our API checks the token on every route.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTideCloak } from "@tidecloak/nextjs";
 
 const CONSOLE_URL = "http://localhost:8080/admin/heirloom/console/";
@@ -56,6 +56,11 @@ export default function SeatsPage() {
     "mai-bank": { kind: "loading" },
   });
 
+  // The context hands out a new secureFetch whenever its memo recomputes (token refresh etc.).
+  // Keep the latest one in a ref so the load does not re-run on every refresh.
+  const fetchRef = useRef(secureFetch);
+  fetchRef.current = secureFetch;
+
   const loadPolicies = useCallback(async () => {
     for (const rec of RECORDS) {
       setPolicies((p) => ({ ...p, [rec.id]: { kind: "loading" } }));
@@ -63,7 +68,7 @@ export default function SeatsPage() {
         // secureFetch attaches `Authorization: DPoP <token>` + a DPoP proof when no Authorization
         // header is set. It needs an absolute URL (it builds the proof's htu with new URL()).
         const url = `${window.location.origin}/api/policies?record=${encodeURIComponent(rec.id)}`;
-        const res = await secureFetch(url);
+        const res = await fetchRef.current(url);
         const body = await res.json().catch(() => null);
         if (!res.ok) {
           const msg = body?.error?.message ?? res.statusText;
@@ -80,7 +85,7 @@ export default function SeatsPage() {
         setPolicies((p) => ({ ...p, [rec.id]: { kind: "error", message: msg } }));
       }
     }
-  }, [secureFetch]);
+  }, []);
 
   useEffect(() => {
     if (authenticated && isSeat) loadPolicies();
