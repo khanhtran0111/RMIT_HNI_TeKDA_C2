@@ -35,6 +35,7 @@ export function validateItemInput(input: unknown): string | null {
   const body = input as Record<string, unknown>;
   if (typeof body.recordId !== "string" || !["mai-care", "mai-bank"].includes(body.recordId)) return "recordId must be mai-care or mai-bank.";
   if (typeof body.recipientUsername !== "string" || !["linh", "long"].includes(body.recipientUsername)) return "recipientUsername must be linh or long.";
+  if ((body.recordId === "mai-care" && body.recipientUsername !== "linh") || (body.recordId === "mai-bank" && body.recipientUsername !== "long")) return "The recipient must match the signed record policy: care wishes for Linh, bank logins for Long.";
   if (typeof body.title !== "string" || !body.title.trim() || body.title.length > 120) return "Title must contain 1–120 characters.";
   if (typeof body.ciphertext !== "string" || !body.ciphertext.trim()) return "A non-empty ciphertext is required.";
   if (Object.keys(body).some(key => !["recordId", "title", "recipientUsername", "ciphertext"].includes(key))) return "Only item metadata and ciphertext are accepted; never submit plaintext.";

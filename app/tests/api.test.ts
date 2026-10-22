@@ -68,3 +68,12 @@ test("an authenticated owner stores ciphertext and an operator receives only all
   assert.equal(body.files["items.json"][0].id, item.id);
   assert.ok(!readFileSync(join(temporary, "data", "heirloom", "items.json"), "utf8").includes("content"));
 });
+test("item recipient must match the signed record policy; a mismatch never writes", async () => {
+  const before = (await (await GET(await request("/api/items", "GET", []))).json()).items;
+  for (const [recordId, recipientUsername] of [["mai-bank", "linh"], ["mai-care", "long"]]) {
+    const response = await POST(await request("/api/items", "POST", ["vault-owner-mai"], JSON.stringify({ recordId, recipientUsername, title: "Wrong recipient", ciphertext: "ZW5jcnlwdGVk" })));
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).error.code, "VALIDATION");
+  }
+  assert.deepEqual((await (await GET(await request("/api/items", "GET", []))).json()).items, before);
+});
