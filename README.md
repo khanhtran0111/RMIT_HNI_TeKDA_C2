@@ -24,7 +24,7 @@ With ordinary login, an operator could read or release anything. Mai's browser e
 
 ### 5. Prototype & storytelling
 
-The server dump shows every stored byte, yet **Try to open** gets "0 of 14 nodes would release this key". Once the notary approves, Long opens the bank logins, not Linh's care wishes. The prototype has one seat (licence limit). [Video](heirloom-demo.mp4).
+The server dump shows every stored byte, yet **Try to open** gets "0 of 14 nodes would release this key". Once the notary approves, Long opens the bank logins, not Linh's care wishes. The prototype has one seat (licence limit). [Video](heirloom.mp4).
 
 ## Setup
 
@@ -151,7 +151,7 @@ Linh, Mai's daughter, has no account: the free licence links at most three.
 
 ### Demo video
 
-[`heirloom-demo.mp4`](heirloom-demo.mp4), at the repository root. What it shows: [Demo video](#demo-video).
+[`heirloom.mp4`](heirloom.mp4), at the repository root. What it shows: [Demo video](#demo-video).
 
 ### First thing to try
 
@@ -164,7 +164,7 @@ Then the release: in the `notary-duc` profile, open **Independent seats** (`/sea
 
 ## Demo video
 
-[`heirloom-demo.mp4`](heirloom-demo.mp4) is in this repository and runs about two minutes. It was recorded against a local TideCloak and the live Tide network: the refusals and the enclave approval are real responses, not mock-ups. All people and data are synthetic. It covers four beats:
+[`heirloom.mp4`](heirloom.mp4) is in this repository and runs about two minutes. It was recorded against a local TideCloak and the live Tide network: the refusals and the enclave approval are real responses, not mock-ups. All people and data are synthetic. It covers four beats:
 
 1. **Possibility.** Mai, 68, seals care wishes for her daughter Linh and bank logins for her son Long, encrypted in her browser.
 2. **Constraint.** Today one party decides: a company, a timer, or one relative.
