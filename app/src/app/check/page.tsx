@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useTideCloak } from "@tidecloak/nextjs";
 import { encryptForRecord, decryptForRecord } from "@/lib/tide/relationship";
 import { classifyTideError } from "@/lib/tide/refusal";
+import { AccessGate, AppShell } from "@/components/AppShell";
 
 const KEY = "heirloom-check-ciphertext";
 const abs = (path: string) => new URL(path, window.location.origin).toString();
@@ -18,7 +19,7 @@ function describe(err: unknown) {
 }
 
 export default function CheckPage() {
-  const { isInitializing, authenticated, login, logout, secureFetch, getValueFromIdToken } = useTideCloak();
+  const { secureFetch } = useTideCloak();
   const [log, setLog] = useState<string[]>([]);
   const add = (s: string) => setLog((l) => [`${new Date().toLocaleTimeString()}  ${s}`, ...l]);
 
@@ -37,14 +38,10 @@ export default function CheckPage() {
     }
   };
 
-  if (isInitializing) return <main style={{ padding: 24 }}>Loading...</main>;
-  if (!authenticated) return <main style={{ padding: 24 }}><button onClick={login}>Sign in</button></main>;
-
-  const me = String(getValueFromIdToken("preferred_username") ?? "");
   return (
-    <main style={{ padding: 24, fontFamily: "var(--font-body)", color: "var(--text)", maxWidth: 900 }}>
-      <h1>Policy check (Dev A, not part of the demo)</h1>
-      <p>Signed in as <b>{me}</b> <button onClick={logout}>Sign out</button></p>
+    <AppShell eyebrow="Diagnostics" title="Policy check" description="A developer check that the record policies encrypt, open and refuse as expected. It is not part of the product and uses synthetic data only.">
+    <AccessGate>
+    <div style={{ maxWidth: 900 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button onClick={run("encrypt mai-bank (owner policy)", async () => {
           const p = await policies("mai-bank");
@@ -68,6 +65,8 @@ export default function CheckPage() {
         <button onClick={() => { navigator.clipboard?.writeText(localStorage.getItem(KEY) ?? ""); add("ciphertext copied"); }}>Copy ciphertext</button>
       </div>
       <pre style={{ whiteSpace: "pre-wrap", background: "var(--surface-sunk)", padding: 12, marginTop: 16, fontFamily: "var(--font-mono)", fontSize: 13 }}>{log.join("\n\n")}</pre>
-    </main>
+    </div>
+    </AccessGate>
+    </AppShell>
   );
 }

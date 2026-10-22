@@ -110,20 +110,21 @@ export function makeChangeRequestClient(fetchFn: FetchFn, baseUrl: string, realm
   return {
     consoleUrl: `${tc}/admin/${encodeURIComponent(realm)}/console/`,
     findUser: (username: string) =>
-      call<{ id: string; username: string }[]>(`look up user ${username}`, "GET", `${admin}/users?username=${encodeURIComponent(username)}&exact=true`),
-    getRole: (name: string) => call<{ id: string; name: string }>(`look up role ${name}`, "GET", `${admin}/roles/${encodeURIComponent(name)}`),
+      call<{ id: string; username: string }[]>(`Look up user ${username}`, "GET", `${admin}/users?username=${encodeURIComponent(username)}&exact=true`),
+    getRole: (name: string) => call<{ id: string; name: string }>(`Look up role ${name}`, "GET", `${admin}/roles/${encodeURIComponent(name)}`),
     grantRealmRole: (userId: string, role: { id: string; name: string }) =>
-      call<Record<string, unknown>>(`release: grant ${role.name}`, "POST", `${admin}/users/${encodeURIComponent(userId)}/role-mappings/realm`, [
+      call<Record<string, unknown>>(`File a release: grant ${role.name}`, "POST", `${admin}/users/${encodeURIComponent(userId)}/role-mappings/realm`, [
         { id: role.id, name: role.name },
       ]),
     list: (status: "PENDING" | "APPROVED" | "DENIED") =>
-      call<ChangeRequest[]>(`list ${status}`, "GET", `${cr}?status=${status}`),
+      call<ChangeRequest[]>(`List ${status.toLowerCase()} requests`, "GET", `${cr}?status=${status}`),
     comment: (id: string, body: string) =>
-      call<unknown>("attach document (comment)", "POST", `${cr}/${encodeURIComponent(id)}/comments`, { body }),
-    approvePhase1: (id: string) => call<ApproveReply>("approve, phase 1 {}", "POST", `${cr}/${encodeURIComponent(id)}/approve`, {}),
+      call<unknown>("Attach a document (comment)", "POST", `${cr}/${encodeURIComponent(id)}/comments`, { body }),
+    approvePhase1: (id: string) =>
+      call<ApproveReply>("Approve, step 1 of 2: ask for the request to sign {}", "POST", `${cr}/${encodeURIComponent(id)}/approve`, {}),
     approvePhase2: (id: string, requestModel: string) =>
-      call<ApproveReply>("approve, phase 2 {requestModel}", "POST", `${cr}/${encodeURIComponent(id)}/approve`, { requestModel }),
-    deny: (id: string, reason: string) => call<unknown>("deny", "POST", `${cr}/${encodeURIComponent(id)}/deny`, { reason }),
+      call<ApproveReply>("Approve, step 2 of 2: send the signed request {requestModel}", "POST", `${cr}/${encodeURIComponent(id)}/approve`, { requestModel }),
+    deny: (id: string, reason: string) => call<unknown>("Deny", "POST", `${cr}/${encodeURIComponent(id)}/deny`, { reason }),
   };
 }
 
@@ -166,8 +167,8 @@ export function approvalCount(c: ChangeRequest): string {
   if (typeof c.authorizationCount === "number") {
     return `${c.authorizationCount} of ${typeof c.threshold === "number" ? c.threshold : "?"} approvals`;
   }
-  if (typeof c.readyToCommit === "boolean") return c.readyToCommit ? "ready to commit" : "waiting for approvals";
-  return "count unknown";
+  if (typeof c.readyToCommit === "boolean") return c.readyToCommit ? "Ready to commit" : "Waiting for approvals";
+  return "Approval count not reported";
 }
 
 export function asTime(v: unknown): number {
@@ -181,9 +182,10 @@ export function asTime(v: unknown): number {
   return 0;
 }
 
+/** Date and time in the viewer's own locale and time zone, e.g. "22 Oct 2026, 14:05". */
 export function formatTime(v: unknown): string {
   const t = asTime(v);
-  return t ? new Date(t).toLocaleString() : "";
+  return t ? new Date(t).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "";
 }
 
 function now() {

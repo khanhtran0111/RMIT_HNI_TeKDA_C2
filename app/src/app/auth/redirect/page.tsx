@@ -1,50 +1,32 @@
 "use client";
 
-import { useAuthCallback } from "@tidecloak/nextjs";
-import { useEffect, useState } from "react";
+import { useTideCloak } from "@tidecloak/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-// Separated so useAuthCallback only runs after hydration (avoids SSR window error).
-function RedirectHandler() {
-  const { isProcessing, isSuccess, error } = useAuthCallback({
-    onSuccess: (returnUrl) => {
-      // Same-origin only: never follow a returnUrl to another site.
-      let target = "/";
-      try {
-        const u = new URL(returnUrl || "/", window.location.origin);
-        // Use the full validated URL: a reassembled "//host/..." path would be protocol-relative.
-        if (u.origin === window.location.origin) target = u.href;
-      } catch {}
-      window.location.assign(target);
-    },
-    onError: () => {
-      window.location.assign("/");
-    },
-    onMissingVerifierRedirectTo: "/",
-  });
-
-  useEffect(() => {
-    // If this page is loaded without callback params (direct navigation),
-    // redirect to home.
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has("code") && !params.has("error")) {
-      window.location.assign("/");
+// The provider's init (check-sso, front-channel) already exchanges the "#state=...&code=..." fragment
+// for tokens. This page only waits for that and then navigates CLIENT-SIDE: a full reload would drop
+// the in-memory session and depend on a silent re-check to get it back.
+function safePath(): string {
+  try {
+    const stored = sessionStorage.getItem("kc_return_url") || "/";
+    const u = new URL(stored, window.location.origin);
+    // Same-origin only: never follow a returnUrl to another site.
+    if (u.origin === window.location.origin && !u.pathname.startsWith("/auth/redirect")) {
+      return `${u.pathname}${u.search}`;
     }
-  }, []);
-
-  if (error) {
-    return <p>Authentication failed: {error.message}</p>;
-  }
-
-  if (isProcessing || !isSuccess) {
-    return <p>Completing login...</p>;
-  }
-
-  return <p>Redirecting...</p>;
+  } catch {}
+  return "/";
 }
 
 export default function AuthRedirectPage() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return <p>Loading...</p>;
-  return <RedirectHandler />;
+  const { isInitializing, authenticated } = useTideCloak();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isInitializing) return;
+    router.replace(authenticated ? safePath() : "/");
+  }, [isInitializing, authenticated, router]);
+
+  return <p>Completing sign-in...</p>;
 }

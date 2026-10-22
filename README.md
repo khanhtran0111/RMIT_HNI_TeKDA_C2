@@ -29,11 +29,11 @@ Our server enforces none of this. Tide network nodes check each item's signed po
 
 ### 5. Prototype & storytelling
 
-Watch the server dump: the operator holds every byte and policy, yet every node refuses. The notary then releases the bank logins; Long opens them but is refused on his sister's care wishes. The free licence's user limit gives the prototype one seat; production uses 2 of 3 independent seats.
+Watch the server dump: the operator holds every byte and policy, yet every node refuses. The notary then releases the bank logins; Long opens them but is refused on his sister's care wishes. The free licence's user limit gives the prototype one seat; production uses 2 of 3 independent seats. Video: [heirloom-demo.mp4](heirloom-demo.mp4).
 
 ## Setup
 
-Prerequisites: Docker Desktop (running), Node 20+, Git Bash on Windows (the scripts are Bash and need `curl` and `jq`), and Chrome or Edge with pop-ups allowed for `localhost:3000` and `localhost:8080`. Never use the VS Code browser for Tide sign-in. Use one browser profile per account: `notary-duc`, `mai`, `long`.
+Prerequisites: Docker Desktop (running), Node 20+, Git Bash on Windows (the scripts are Bash and need `curl` and `jq`), and Chrome or Edge with pop-ups allowed for `localhost:3000` and `localhost:8080`. If the browser asks whether the Tide enclave may access apps and services on your local network, click Allow: the enclave (on `tideprotocol.com`) has to reach TideCloak on `localhost:8080`, and sealing times out without it. Never use the VS Code browser for Tide sign-in. Use one browser profile per account: `notary-duc`, `mai`, `long`.
 
 1. Copy `app/.env.example` to `app/.env` and set `KC_BOOTSTRAP_ADMIN_PASSWORD` (the local TideCloak master password), `TIDE_LICENSE_EMAIL` (an address you control) and `TIDE_TERMS_ACCEPTED=yes` (only after you have read and agreed to https://tide.org/legal).
 2. Install and bootstrap TideCloak (starts the `tideorg/tidecloak-dev` container, creates the realm, exports `app/data/tidecloak.json`):
@@ -61,9 +61,13 @@ Prerequisites: Docker Desktop (running), Node 20+, Git Bash on Windows (the scri
    npm run demo-ids
    ```
 
+## Demo video
+
+[`heirloom-demo.mp4`](heirloom-demo.mp4) (1:56, in this repository). Every app shot is the running prototype against a local TideCloak and the live Tide network: the refusals, the 403, the enclave approval and the release are real responses, not mock-ups. All people and data are synthetic.
+
 ## How it works
 
-- **Records.** Each item is one record (`mai-care`, `mai-bank`). Mai's browser encrypts it with the record id as its only tag; the server stores only ciphertext in `data/heirloom/items.json`.
+- **Records.** Each item is one record (`mai-care`, `mai-bank`). Mai's browser encrypts it with the record id as its only tag; the server stores the content only as ciphertext in `data/heirloom/items.json` (the title and recipient stay readable so the right person can find it).
 - **Policies.** Four policies use Tide's built-in `RelationshipAttestation:1` contract (nothing custom is deployed): `owner:mai-care` and `owner:mai-bank` give role `vault-owner-mai` read-write; `heir:mai-care` gives role `heir-care-mai` read; `heir:mai-bank` gives role `heir-bank-mai` read. A seat signs them once on `/setup`.
 - **Release = one governed role grant.** A seat asks TideCloak to grant `heir-bank-mai` to Long. TideCloak turns that into a `GRANT_ROLES` change request that commits only after seat approval in the Tide enclave (a signing window outside our app). Revocation is the same request with a delete.
 
@@ -88,11 +92,11 @@ Long            --decrypt mai-care-->             no heir-care-mai role -> refus
 
 1. **Possibility** (`/vault`, as `mai`): click **Seal demo items**. Two items appear SEALED with a ciphertext preview: "Care wishes" for Linh and "Bank and pension logins" for Long. Open either one: Mai can re-read her own items.
 2. **Constraint**: today one party decides, the company, a timer or one relative.
-3. **The server dump** (`/operator`, as `long`): "Server dump (what Heirloom stores)" shows the raw items, the policies and their decoded rules. **Try to open** "Bank and pension logins": **Refused by the Tide network, 0 of N nodes would release this key**, with the raw cause. **Try to release to Long**: **403 from TideCloak: not a seat**. **Call our API without DPoP**: **401: the app's own API refused (not Tide)**.
+3. **The server dump** (`/operator`, as `long`): "Server dump (what Heirloom stores)" shows the raw items, the policies and their decoded rules. **Try to open** "Bank and pension logins": **Refused by the Tide network, 0 of 14 nodes would release this key**, with the raw cause. **Try to release to Long**: **403 from TideCloak: not a seat**. **Call our API without DPoP**: **401: the app's own API refused (not Tide)**.
 4. **Son refused before release** (`/heir`, as `long`): **Open** the bank logins: refused, cause `'heir-bank-mai' role not found in doken.`
 5. **A seat cannot read** (`/operator`, as `notary-duc`): **Try to open** either item: refused.
-6. **Release** (`/seats`, as `notary-duc`): **Release bank logins to Long**, then approve the change request in the Tide enclave pop-up (the page attaches the comment "Capacity assessment CA-DEMO-07 attached (synthetic)"): **APPROVED, committed**.
-7. **One item, one recipient** (`/heir`, as `long`): sign out and back in (roles arrive on the next sign-in). Open the bank logins: plaintext. Open the care wishes (listed under "Addressed to another recipient"): refused (`'heir-care-mai' role not found in doken.`). **Compare with stored ciphertext** shows his plaintext next to the bytes the server holds.
+6. **Release** (`/seats`, as `notary-duc`): **Release bank logins to Long**, TideCloak files a `GRANT_ROLES` change request instead of granting. Optionally tick **Attach the capacity assessment** (a synthetic document, added as a comment), then **Approve in the Tide enclave**: in the Tide pop-up press **Y** and **Submit Approvals**. The request moves to "Recently decided" as **APPROVED**.
+7. **One item, one recipient** (`/heir`, as `long`): sign out and back in (roles arrive on the next sign-in). Open the bank logins: 14 of 20 nodes agree and the plaintext opens in his browser. Open the care wishes (listed under "Addressed to another recipient"): refused (`'heir-care-mai' role not found in doken.`). **Compare with stored ciphertext** shows his plaintext next to the bytes the server holds.
 
 ## Synthetic data
 

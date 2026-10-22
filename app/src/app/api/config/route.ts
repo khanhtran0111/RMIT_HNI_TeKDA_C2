@@ -1,16 +1,17 @@
 import { loadTideConfig } from "@/lib/auth/tidecloakConfig";
+import { withAuth } from "@/lib/auth/middleware";
+import { apiError, apiRoute } from "@/lib/api";
 
-// Serve adapter JSON for server-side use (e.g. JWT verification).
-// The client-side SDK now imports the adapter JSON directly via TideCloakProvider's config prop.
-// This route remains available for any server-side consumers that need the config.
-export async function GET() {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// Template leftover: the app does not call it (pages get the public adapter through TideCloakProvider's
+// config prop). Kept behind the same token + DPoP check as every other /api route, and its error
+// does not echo server paths.
+export const GET = apiRoute(withAuth(async () => {
   try {
-    const config = loadTideConfig();
-    return Response.json(config);
-  } catch (err) {
-    return Response.json(
-      { error: err instanceof Error ? err.message : "Config not found" },
-      { status: 500 }
-    );
+    return Response.json(loadTideConfig());
+  } catch {
+    return apiError("CONFIG", "The Tide adapter configuration is not available.", 500);
   }
-}
+}));

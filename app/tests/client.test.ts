@@ -41,3 +41,20 @@ test("API authorization errors remain app errors, separate from Tide refusals", 
   const client = createVaultClient(async () => Response.json({ error: { code: "FORBIDDEN", message: "Forbidden" } }, { status: 403 }));
   await assert.rejects(client.getItems(), /403.*Forbidden/);
 });
+test("Tide crypto calls run one at a time, so two Opens in flight cannot receive each other's reply", async () => {
+  const events: string[] = [];
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const client = createVaultClient(async () => Response.json({ owner: "OWNER", heir: "HEIR" }), {
+    async encryptForRecord() { throw new Error("unexpected encrypt"); },
+    async decryptForRecord(ciphertext: string) { events.push(`start ${ciphertext}`); if (ciphertext === "A") await gate; events.push(`end ${ciphertext}`); return `plain ${ciphertext}`; },
+  });
+  const first = client.openItem({ recordId: "mai-bank", ciphertext: "A" }, "heir");
+  const second = client.openItem({ recordId: "mai-care", ciphertext: "B" }, "heir");
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.deepEqual(events, ["start A"]);
+  release();
+  assert.equal(await first, "plain A");
+  assert.equal(await second, "plain B");
+  assert.deepEqual(events, ["start A", "end A", "start B", "end B"]);
+});

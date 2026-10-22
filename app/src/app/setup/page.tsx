@@ -6,8 +6,13 @@
 // role tide-realm-admin on the verified token.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTideCloak } from "@tidecloak/nextjs";
 import { Models } from "@tideorg/js";
+import { AccessGate, AppShell } from "@/components/AppShell";
+import { useSession } from "@/components/Session";
+import { Icon } from "@/components/Icon";
+import { StatusChip } from "@/components/StatusChip";
+import { Callout, Card, SectionHeader, Term } from "@/components/ui";
+import { NodeGrid } from "@/components/tide";
 import {
   signRelationshipPolicy,
   decryptForRecord,
@@ -25,6 +30,7 @@ const POLICIES: { id: string; recordId: string; roleId: string; access: Relation
   { id: "heir:mai-bank", recordId: "mai-bank", roleId: "heir-bank-mai", access: "read" },
 ];
 const RECORDS = ["mai-care", "mai-bank"] as const;
+const RECORD_TITLES: Record<string, string> = { "mai-care": "Care wishes", "mai-bank": "Bank and pension logins" };
 
 type Stored = Record<string, { owner: string | null; heir: string | null } | { error: string }>;
 type ButtonState =
@@ -59,9 +65,15 @@ function rawCause(err: unknown): string {
   }
 }
 
+/** Plain sentence for a policy row: who may do what with which item. */
+function policyTitle(p: (typeof POLICIES)[number]): string {
+  const item = (RECORD_TITLES[p.recordId] ?? p.recordId).toLowerCase();
+  return p.access === "read-write" ? `Mai may read and change the ${item}` : `The holder of ${p.roleId} may read the ${item}`;
+}
+
 export default function SetupPage() {
-  const { isInitializing, authenticated, login, hasClientRole, secureFetch, getVendorId, getConfig, baseURL } =
-    useTideCloak();
+  const session = useSession();
+  const { isInitializing, authenticated, hasClientRole, secureFetch, getVendorId, getConfig, baseURL } = session;
   const isAdmin = !isInitializing && authenticated && hasClientRole("tide-realm-admin", "realm-management");
 
   const latestVersion = String((Models.Policy as unknown as { latestVersion: string }).latestVersion);
@@ -156,135 +168,186 @@ export default function SetupPage() {
     }
   }
 
-  if (isInitializing) return <main style={page}>Loading...</main>;
-  if (!authenticated) {
-    return (
-      <main style={page}>
-        <Badge />
-        <h1 style={h1}>Setup</h1>
-        <button onClick={login} style={btn}>Sign in</button>
-      </main>
-    );
-  }
-  if (!isAdmin) {
-    return (
-      <main style={page}>
-        <Badge />
-        <h1 style={h1}>Setup</h1>
-        <p style={{ color: "var(--refused)", fontWeight: 600 }}>
-          <span aria-hidden>✕</span> NOT ALLOWED: this page is for a realm admin (tide-realm-admin) only.
-        </p>
-      </main>
-    );
+  /** Whether the server already stores this policy (from the "Stored policies" read). */
+  function isStored(p: (typeof POLICIES)[number]): boolean {
+    const s = stored[p.recordId];
+    if (!s || "error" in s) return false;
+    return !!(p.access === "read-write" ? s.owner : s.heir);
   }
 
   return (
-    <main style={page}>
-      <Badge />
-      <h1 style={h1}>Setup: sign the four record policies</h1>
-      <dl style={{ display: "grid", gridTemplateColumns: "max-content 1fr", gap: "var(--space-1) var(--space-3)", fontSize: "var(--fs-small)" }}>
-        <dt>Models.Policy.latestVersion</dt>
-        <dd style={mono}>{latestVersion}</dd>
-        <dt>vendorId</dt>
-        <dd style={mono}>{vendorId || "(none)"}</dd>
-        <dt>Admin policy</dt>
-        <dd style={mono}>{adminPolicySource}</dd>
-      </dl>
+    <AppShell
+      eyebrow="One-time setup"
+      title="Sign the record policies"
+      description="A one-time step for the first seat, before anyone seals an item. Each policy is a signed rule that tells the Tide network who may open a record."
+    >
+      <AccessGate allow={session.isSeat}>
+        <div className="stack">
+          <Callout tone="tide" title="Sign all four while the realm still has one admin">
+            <p>
+              Each button opens the Tide enclave, where you sign with your own key. Heirloom&apos;s server stores the signed
+              policies but cannot change them, and the Tide network checks them on every open.
+            </p>
+          </Callout>
 
-      <section style={card}>
-        {POLICIES.map((p) => {
-          const s = buttons[p.id] ?? { state: "idle" };
-          return (
-            <div key={p.id} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
-              <button onClick={() => void sign(p)} disabled={s.state === "working"} style={btn}>
-                Sign {p.id}
-              </button>{" "}
-              <span style={{ fontSize: "var(--fs-small)", color: "var(--text-muted)" }}>
-                record {p.recordId}, Role {p.roleId}, {p.access}
-              </span>
-              <div style={{ marginTop: "var(--space-1)" }}>
-                {s.state === "working" && (
-                  <span style={{ color: "var(--pending)", fontWeight: 600 }}><span aria-hidden>⧗</span> SIGNING (approve in the enclave)</span>
-                )}
-                {s.state === "signed" && (
-                  <span style={{ color: "var(--approved)", fontWeight: 600 }}><span aria-hidden>✓</span> SIGNED</span>
-                )}
-                {s.state === "error" && (
-                  <div style={{ color: "var(--refused)" }}>
-                    <span style={{ fontWeight: 600 }}><span aria-hidden>✕</span> ERROR ({s.err.kind})</span>
-                    <pre style={pre}>message: {s.err.message}{"\n"}cause: {s.err.cause || "(none)"}</pre>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </section>
+          <Card as="section" labelledBy="env-h">
+            <h2 id="env-h">This environment</h2>
+            <dl className="setup-facts">
+              <dt>Models.Policy.latestVersion</dt>
+              <dd>{latestVersion}</dd>
+              <dt>vendorId</dt>
+              <dd>{vendorId || "(none)"}</dd>
+              <dt>Admin policy</dt>
+              <dd>{adminPolicySource}</dd>
+            </dl>
+          </Card>
 
-      <section style={card}>
-        <h2 style={h2}>Stored policies</h2>
-        <button onClick={() => void loadStored()} style={btnQuiet}>Reload</button>
-        {RECORDS.map((r) => {
-          const s = stored[r];
-          return (
-            <div key={r} style={{ marginTop: "var(--space-2)" }}>
-              <strong>{r}</strong>
-              {!s ? (
-                <span style={{ color: "var(--text-muted)" }}> loading...</span>
-              ) : "error" in s ? (
-                <span style={{ color: "var(--refused)" }}> <span aria-hidden>✕</span> {s.error}</span>
-              ) : (
-                <ul style={{ margin: 0, fontSize: "var(--fs-small)" }}>
-                  {(["owner", "heir"] as const).map((k) => (
-                    <li key={k}>
-                      {k}:{" "}
-                      {s[k] ? (
-                        <span style={{ color: "var(--approved)" }}><span aria-hidden>✓</span> STORED <span style={mono}>{s[k]!.slice(0, 24)}...</span></span>
-                      ) : (
-                        <span style={{ color: "var(--pending)" }}><span aria-hidden>⧗</span> MISSING</span>
+          <Card as="section" labelledBy="sign-h">
+            <SectionHeader
+              id="sign-h"
+              eyebrow="Step 1"
+              title="Sign the four policies"
+              description={
+                <>
+                  Built-in Tide contract{" "}
+                  <Term explain="A ready-made Tide policy contract: it ties one record to one role. Nothing is written or deployed.">
+                    RelationshipAttestation:1
+                  </Term>
+                  . One policy per record and role.
+                </>
+              }
+            />
+            <ul className="seats-rows">
+              {POLICIES.map((p) => {
+                const s = buttons[p.id] ?? { state: "idle" };
+                const done = s.state === "signed" || isStored(p);
+                return (
+                  <li key={p.id}>
+                    <div className="seats-row-head">
+                      <div className="stack-sm">
+                        <h3>{policyTitle(p)}</h3>
+                        <div className="seats-meta">
+                          <code className="tag">{p.id}</code>
+                          <span>
+                            Record <code className="tag">{p.recordId}</code>
+                          </span>
+                          <span>
+                            Role <code className="tag">{p.roleId}</code>
+                          </span>
+                          <span>{p.access}</span>
+                        </div>
+                      </div>
+                      <button className={done ? "button-secondary" : undefined} onClick={() => void sign(p)} disabled={s.state === "working"}>
+                        <Icon name="key" size={18} />
+                        Sign {p.id}
+                      </button>
+                    </div>
+                    <div aria-live="polite">
+                      {s.state === "working" && (
+                        <div className="cluster">
+                          <StatusChip state="pending" label="SIGNING" />
+                          <span className="help">Approve in the Tide enclave window.</span>
+                        </div>
                       )}
-                    </li>
-                  ))}
-                </ul>
+                      {s.state === "signed" && (
+                        <div className="cluster">
+                          <StatusChip state="sealed" label="SIGNED" />
+                          <span className="help">Signed in the Tide enclave, checked, and stored by the server.</span>
+                        </div>
+                      )}
+                      {s.state === "error" && (
+                        <Callout tone="danger" role="alert" title={`Could not sign (${s.err.kind})`}>
+                          <pre className="setup-pre">message: {s.err.message}{"\n"}cause: {s.err.cause || "(none)"}</pre>
+                        </Callout>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+
+          <Card as="section" labelledBy="stored-h">
+            <SectionHeader
+              id="stored-h"
+              eyebrow="Step 2"
+              title="Stored policies"
+              description="What Heirloom's server holds for each record right now."
+              action={
+                <button className="button-secondary button-sm" onClick={() => void loadStored()}>
+                  Reload
+                </button>
+              }
+            />
+            <ul className="seats-rows">
+              {RECORDS.map((r) => {
+                const s = stored[r];
+                return (
+                  <li key={r}>
+                    <h3 className="with-icon">
+                      {RECORD_TITLES[r]} <code className="tag">{r}</code>
+                    </h3>
+                    {!s ? (
+                      <p className="muted">Loading…</p>
+                    ) : "error" in s ? (
+                      <Callout tone="danger" role="alert" title="Could not load">
+                        <p className="seats-result-text">{s.error}</p>
+                      </Callout>
+                    ) : (
+                      <ul className="setup-stored">
+                        {(["owner", "heir"] as const).map((k) => (
+                          <li key={k}>
+                            <span className="setup-stored-key">{k === "owner" ? "Owner policy" : "Heir policy"}</span>
+                            {s[k] ? (
+                              <>
+                                <StatusChip state="sealed" label="STORED" />
+                                <code className="tag">{s[k]!.slice(0, 24)}…</code>
+                              </>
+                            ) : (
+                              <StatusChip state="pending" label="MISSING" />
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+
+          <Card as="section" labelledBy="test-h">
+            <SectionHeader
+              id="test-h"
+              eyebrow="Step 3"
+              title="Test a refusal"
+              description="Decrypts a dummy ciphertext with the heir:mai-bank policy as this admin, who does not hold heir-bank-mai. The Tide network should refuse."
+            />
+            <div className="stack-sm">
+              <div className="actions">
+                <button className="button-secondary" onClick={() => void testRefusal()} disabled={!bankHeir}>
+                  <Icon name="shieldX" size={18} />
+                  Test refusal (mai-bank, heir policy)
+                </button>
+                {!bankHeir && <span className="help">Sign heir:mai-bank first.</span>}
+              </div>
+              <p className="help">Copy the message and cause below into the markers in src/lib/tide/refusal.ts.</p>
+            </div>
+            <div aria-live="polite">
+              {test && (
+                <div className="stack-sm">
+                  {typeof test.result !== "string" && test.result.kind === "refused" && (
+                    <NodeGrid state="refused" compact got={test.result.nodes?.got} required={test.result.nodes?.required} />
+                  )}
+                  <pre className="raw-store">
+                    {`classifyTideError: ${typeof test.result === "string" ? test.result : JSON.stringify(test.result, null, 2)}\n\nraw message: ${test.message}\nraw cause: ${test.cause}`}
+                  </pre>
+                </div>
               )}
             </div>
-          );
-        })}
-      </section>
-
-      <section style={card}>
-        <h2 style={h2}>Test refusal</h2>
-        <p style={{ fontSize: "var(--fs-small)", color: "var(--text-muted)" }}>
-          Decrypts a dummy ciphertext with the heir:mai-bank policy as this admin (who does not hold heir-bank-mai).
-          Copy the message and cause below into the markers in src/lib/tide/refusal.ts.
-        </p>
-        <button onClick={() => void testRefusal()} disabled={!bankHeir} style={btn}>
-          Test refusal (mai-bank, heir policy)
-        </button>
-        {!bankHeir && <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-small)" }}> sign heir:mai-bank first</span>}
-        {test && (
-          <pre style={pre}>
-            {`classifyTideError: ${typeof test.result === "string" ? test.result : JSON.stringify(test.result, null, 2)}\n\nraw message: ${test.message}\nraw cause: ${test.cause}`}
-          </pre>
-        )}
-      </section>
-    </main>
+          </Card>
+        </div>
+      </AccessGate>
+    </AppShell>
   );
 }
-
-function Badge() {
-  return (
-    <span style={{ display: "inline-block", border: "1px dashed var(--mock-border)", color: "var(--mock)", borderRadius: "var(--radius-pill)", padding: "2px 10px", fontSize: "var(--fs-small)", fontWeight: 600 }}>
-      SYNTHETIC DATA
-    </span>
-  );
-}
-
-const page: React.CSSProperties = { maxWidth: 820, margin: "0 auto", padding: "var(--space-5) var(--space-3)", color: "var(--text)" };
-const h1: React.CSSProperties = { fontFamily: "var(--font-head)", fontSize: "var(--fs-h1)", margin: "var(--space-3) 0" };
-const h2: React.CSSProperties = { fontFamily: "var(--font-head)", fontSize: "var(--fs-h2)", margin: "0 0 var(--space-2)" };
-const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", padding: "var(--space-3)", marginTop: "var(--space-4)" };
-const btn: React.CSSProperties = { background: "var(--primary)", color: "var(--on-primary)", border: "none", borderRadius: "var(--radius)", padding: "var(--space-2) var(--space-3)", fontSize: "var(--fs-small)", fontWeight: 600, cursor: "pointer" };
-const btnQuiet: React.CSSProperties = { ...btn, background: "var(--surface-sunk)", color: "var(--text)" };
-const mono: React.CSSProperties = { fontFamily: "var(--font-mono)", wordBreak: "break-all", margin: 0 };
-const pre: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: "var(--fs-small)", background: "var(--surface-sunk)", padding: "var(--space-2)", borderRadius: "var(--radius)", whiteSpace: "pre-wrap", wordBreak: "break-all", color: "var(--text)" };

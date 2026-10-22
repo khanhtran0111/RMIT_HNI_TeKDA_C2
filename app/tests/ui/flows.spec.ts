@@ -1,19 +1,26 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { BANK, CARE, PLAINTEXT_MARKERS, b64, changeRequests, itemCard, openCard, sealDemoItems } from "./helpers";
 
 test.beforeEach(async ({ request }) => { await request.post("/__test/reset"); });
-test("production app renders the honest setup state on every Dev B route at four widths", async ({ page }, info) => {
-  const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+// The real app must be opened on localhost: the TideCloak client and Next's dev origin are both
+// registered for http://localhost:3000. On 127.0.0.1 the client bundle is blocked and never hydrates.
+const PROD = process.env.PROD_ORIGIN ?? "http://localhost:3000";
+test("production app shows the signed-out state on every route at four widths", async ({ page }, info) => {
+  test.setTimeout(240_000);
+  const errors: string[] = []; page.on("pageerror", error => errors.push(`${page.url()}: ${error.message}`));
   for (const width of [1440, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const route of ["/", "/vault", "/heir", "/operator"]) {
-      await page.goto(`http://127.0.0.1:3000${route}`);
-      await expect(page.getByRole("heading", { name: "Waiting for vault setup" })).toBeVisible();
-      await expect(page.getByText("SYNTHETIC DATA", { exact: false }).first()).toBeVisible();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+    for (const route of ["/", "/vault", "/heir", "/operator", "/seats"]) {
+      await page.goto(`${PROD}${route}`);
+      await expect.soft(page.getByRole("button", { name: /sign in with tide/i }).first(), `${route} at ${width}px: sign-in button`).toBeVisible({ timeout: 20_000 });
+      await expect.soft(page.getByText("SYNTHETIC DATA", { exact: false }).first(), `${route} at ${width}px: synthetic badge`).toBeVisible();
+      expect.soft(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${route} at ${width}px: no horizontal scroll`).toBeTruthy();
     }
-    await page.goto("http://127.0.0.1:3000/");
+    await page.goto(`${PROD}/`);
+    // Wait for the session to settle, or the evidence shot captures "Connecting to your Tide session...".
+    await expect(page.getByRole("button", { name: /sign in with tide/i }).first()).toBeVisible({ timeout: 20_000 });
     await page.screenshot({ path: info.outputPath(`production-home-${width}.png`), fullPage: true });
   }
   expect(errors).toEqual([]);
@@ -110,4 +117,65 @@ test("notary can try opening the dump without accidentally filing a real role gr
   await expect(page.getByRole("button", { name: "Try to release to Long", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Try to open", exact: true }).first().click();
   await expect(page.getByText("0 of 14 nodes would release this key", { exact: true })).toBeVisible();
+});
+test("demo path end to end (harness)", async ({ page, request }, info) => {
+  test.setTimeout(120_000);
+  await request.post("/__test/reset?empty=1");
+  await test.step("mai seals both items and no plaintext leaves the browser", async () => {
+    const posted = await sealDemoItems(page);
+    for (const body of posted) {
+      expect(Object.keys(body)).not.toContain("content");
+      for (const marker of PLAINTEXT_MARKERS) expect(JSON.stringify(body)).not.toContain(marker);
+      expect(String(body.ciphertext)).toMatch(/^TEST-ONLY-CIPHERTEXT-/);
+    }
+  });
+  await test.step("long sees both items on /heir and is refused on each", async () => {
+    await page.goto("/heir?as=long");
+    // Recipient names render as avatar initial + name ("For LLong"), so match the name only.
+    await expect(itemCard(page, BANK)).toContainText(/long/i);
+    await expect(itemCard(page, BANK)).not.toContainText(/linh/i);
+    await expect(itemCard(page, CARE)).toContainText(/linh/i);
+    for (const [title, role] of [[BANK, "heir-bank-mai"], [CARE, "heir-care-mai"]] as const) {
+      const card = await openCard(page, title);
+      await expect(card.getByText(/refused/i).first()).toBeVisible();
+      await expect(card).toContainText(`'${role}' role not found in doken.`);
+      await expect(card).not.toContainText("VietBank");
+    }
+  });
+  await test.step("long on /operator: open is refused, release is refused as not a seat", async () => {
+    await page.goto("/operator?as=long");
+    await itemCard(page, BANK).getByRole("button", { name: /try to open/i }).click();
+    await expect(itemCard(page, BANK).getByText(/refused/i).first()).toBeVisible();
+    const grant = page.waitForResponse(response => response.request().method() === "POST" && /\/role-mappings\/realm$/.test(response.url()));
+    await page.getByRole("button", { name: /try to release/i }).click();
+    expect((await grant).status()).toBe(403);
+    await expect(page.getByText(/not a seat/i).first()).toBeVisible();
+    expect(await changeRequests(request, "PENDING")).toHaveLength(0);
+  });
+  await test.step("notary-duc files the bank release, sees it pending, approves it in two phases", async () => {
+    const approvals: unknown[] = [];
+    page.on("request", r => { if (r.method() === "POST" && /\/iga\/change-requests\/[^/]+\/approve$/.test(r.url())) approvals.push(r.postDataJSON()); });
+    await page.goto("/seats?as=notary-duc");
+    await page.getByRole("button", { name: /release bank logins/i }).click();
+    await expect.poll(async () => (await changeRequests(request, "PENDING")).length).toBe(1);
+    const [pending] = await changeRequests(request, "PENDING");
+    expect(pending.rows).toEqual([{ USER_ID: "TEST-long-id", ROLE_ID: "TEST-role-id" }]);
+    await expect(page.getByText(pending.id).first()).toBeVisible();
+    await expect(page.getByText(/pending/i).first()).toBeVisible();
+    await page.screenshot({ path: info.outputPath("seats-pending.png"), fullPage: true });
+    await page.getByRole("button", { name: /approve/i }).first().click();
+    await expect.poll(async () => (await changeRequests(request, "APPROVED")).map(c => c.id)).toEqual([pending.id]);
+    expect(await changeRequests(request, "PENDING")).toHaveLength(0);
+    expect(approvals).toEqual([{}, { requestModel: b64(`TEST-REQUEST-${pending.id}`) }]);
+    await expect(page.getByText(/APPROVED|[Aa]pproved,? committed/).first()).toBeVisible();
+  });
+  await test.step("long, released, opens the bank logins and is still refused on care wishes", async () => {
+    await page.goto("/heir?as=long&released=1");
+    const bank = await openCard(page, BANK);
+    await expect(bank.getByText(/VietBank/).first()).toBeVisible();
+    const care = await openCard(page, CARE);
+    await expect(care.getByText(/refused/i).first()).toBeVisible();
+    await expect(care).toContainText("'heir-care-mai' role not found in doken.");
+    await page.screenshot({ path: info.outputPath("heir-released.png"), fullPage: true });
+  });
 });
