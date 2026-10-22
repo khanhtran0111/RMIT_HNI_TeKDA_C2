@@ -1,0 +1,31 @@
+# Whitelist: only the product and the shared dev spec go to GitHub. Everything else stays local.
+/*
+!/.gitignore
+!/README.md
+!/*.mp4
+!/app/
+!/docs/
+/docs/*
+!/docs/SPEC.md
+!/docs/split.md
+!/demo/
+/demo/*
+!/demo/fixtures/
+/demo/fixtures/*
+!/demo/fixtures/heirloom.json
+
+# Inside app/: secrets, local TideCloak state, build output
+app/.env
+app/.env.*
+!app/.env.example
+app/data/*
+!app/data/.gitkeep
+app/node_modules/
+app/.next/
+app/next-env.d.ts
+*.tsbuildinfo
+*.log
+*.mv.db
+*.trace.db
+.DS_Store
+Thumbs.db

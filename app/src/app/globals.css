@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=Source+Code+Pro:wght@400;600&display=swap');
+:root {
+  --bg: #F7F6F2;  --surface: #FFFFFF;  --surface-sunk: #EEECE6;
+  --text: #1F2A30;  --text-muted: #55616A;
+  --border: #D9D5CC;  --border-strong: #80878E;
+  --primary: #0E6E83;  --on-primary: #FFFFFF;  --ring: #0E6E83;
+  --refused: #B42318;  --refused-ink: #9A1C13;  --refused-tint: #FDECEA;  --on-refused: #FFFFFF;
+  --pending: #8A4B00;  --pending-tint: #FFF1D6;
+  --approved: #1D6B3A;  --approved-tint: #E6F3EA;
+  --mock: #5E6670;  --mock-border: #80878E;
+  --font-head: 'Lexend', system-ui, sans-serif;
+  --font-body: 'Source Sans 3', system-ui, sans-serif;
+  --font-mono: 'Source Code Pro', ui-monospace, monospace;
+  --fs-body: 18px;  --fs-small: 15px;  --fs-h2: 24px;  --fs-h1: 32px;
+  --fs-state: 32px;  --fs-result: 56px;          /* projector-safe sizes */
+  --space-1: 4px; --space-2: 8px; --space-3: 16px; --space-4: 24px; --space-5: 32px; --space-6: 48px;
+  --radius: 8px;  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgba(31,42,48,.08), 0 2px 8px rgba(31,42,48,.06);
+  --dur-enter: 220ms;  --dur-exit: 160ms;  --ease: cubic-bezier(.2,.7,.2,1);
+}
+body { background: var(--bg); color: var(--text); font: 400 var(--fs-body)/1.5 var(--font-body); }
+:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
